@@ -46,7 +46,6 @@
 *.res
 TemporaryGeneratedFile*.cs
 *.txt
-*.config
 *.ipdb
 *.iobj
 *.force
@@ -54,3 +53,6 @@ TemporaryGeneratedFile*.cs
 PlayM4.h
 WindowsPlayM4.h
 HCNetSDK.h
+*.db
+*.opendb
+*.suo

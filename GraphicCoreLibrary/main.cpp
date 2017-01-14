@@ -29,7 +29,7 @@ void decoder()
 		QueryPerformanceCounter(&start);
 		ctrans.ColorTrans_YV12toARGB32(input, output, 0);
 		QueryPerformanceCounter(&end);
-		printf("execute time: %d\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
+		printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
 	}
 	//fake data
 
