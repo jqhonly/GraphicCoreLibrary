@@ -7,6 +7,8 @@
 extern "C"
 int YV12toARGB32(unsigned char* d_YV12, unsigned char* d_RGBA32, int width, int height, int deviceid);
 
+
+
 namespace GCL
 {
 	class ColorTransform

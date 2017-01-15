@@ -1,6 +1,19 @@
 #include "ColorTransform.h"
 #include <windows.h>  
 
+extern "C"
+void gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int height, float sigma, int order, int nthreads);
+
+extern "C"
+void ARGB32toUINT32(unsigned char* pARGB, uint* pUINT, int width, int height, int deviceid);
+
+extern "C"
+void logAve(float* logAveImage, uint* rgbaImage, uint* BlurImage1, uint* BlurImage2, uint* BlurImage3, int Width, int Height);
+
+extern "C"
+void h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height);
+
+
 namespace GCL
 {
 	ColorTransform::ColorTransform(int _width, int _height)
