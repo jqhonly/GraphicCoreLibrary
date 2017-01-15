@@ -7,6 +7,7 @@
 #include "CameraManagement.h"
 
 using namespace GCL;
+//using namespace Camera;
 
 void decoder()
 {
@@ -42,8 +43,13 @@ void decoder()
 
 int main()
 {
+	/*HikVision hik = HikVision();
+	hik.InitCamera();
+	hik.Login("192.168.0.68", 8000, "admin", "hk123456");
+	hik.Activte();*/
+
 	Camera::InitCamera();
-	Camera::Login("192.168.0.68", 8000, "admin", "hk123456");
+	Camera::Login("192.168.0.66", 8000, "admin", "hk123456");
 	Camera::Activte();
 
 	while (true)

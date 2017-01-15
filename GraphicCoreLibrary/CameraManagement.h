@@ -10,6 +10,7 @@ namespace Camera
 	LONG lRealPlayHandle;
 	LONG lUserID;
 	HWND hWnd = NULL;
+	//std::vector<LONG> nPorts;
 
 	std::string IP;
 	unsigned int port;
@@ -71,7 +72,7 @@ namespace Camera
 			}
 			if (dwBufSize > 0)
 			{
-				
+
 				if (!PlayM4_OpenStream(nPort, pBuffer, dwBufSize, 2 * 1024 * 1024))
 				{
 					dRet = PlayM4_GetLastError(nPort);
