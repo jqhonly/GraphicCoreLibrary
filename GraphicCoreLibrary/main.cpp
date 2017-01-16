@@ -4,7 +4,7 @@
 #include "ColorTransform.h"
 
 #include <windows.h>  
-#include "CameraManagement.h"
+//#include "CameraManagement.h"
 
 using namespace GCL;
 //using namespace Camera;
@@ -28,7 +28,7 @@ void decoder()
 			input[i] = i*(10 - j) % 255;
 		}
 		QueryPerformanceCounter(&start);
-		ctrans.ColorTrans_YV12toARGB32(input, output, 0);
+		ctrans.ColorTrans_YV12toARGB32_RetineX(input, output, 0);
 		QueryPerformanceCounter(&end);
 		printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
 	}
@@ -48,7 +48,7 @@ int main()
 	hik.Login("192.168.0.68", 8000, "admin", "hk123456");
 	hik.Activte();*/
 
-	Camera::InitCamera();
+	/*Camera::InitCamera();
 	Camera::Login("192.168.0.66", 8000, "admin", "hk123456");
 	Camera::Activte();
 
@@ -56,6 +56,8 @@ int main()
 	{
 		Sleep(10);
 	}
-	
+	*/
+
+	decoder();
 	return 0;
 }
