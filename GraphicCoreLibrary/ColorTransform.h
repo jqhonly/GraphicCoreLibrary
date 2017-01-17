@@ -14,6 +14,7 @@ namespace GCL
 		int width = NULL;
 		int height = NULL;
 		unsigned char* d_rgba32 = nullptr;
+		unsigned char* d_o_rgba32 = nullptr;
 		unsigned char* d_yv12 = nullptr;
 		/*unsigned char* h_rgba32 = nullptr;
 		unsigned char* h_yv12 = nullptr;*/
@@ -38,5 +39,7 @@ namespace GCL
 		int ColorTrans_YV12toARGB32(unsigned char* h_YV12, unsigned char* h_RGBA32, int deviceid);
 
 		int ColorTrans_YV12toARGB32_RetineX(unsigned char* h_YV12, unsigned char* h_RGBA32, int deviceid);
+
+		int ColorTrans_RetineX(unsigned char* h_o_RGBA32, unsigned char* h_RGBA32, int deviceid);
 	};
 }

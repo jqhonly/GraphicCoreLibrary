@@ -26,6 +26,7 @@ namespace GCL
 		/*cudaHostGetDevicePointer(&d_rgba32, h_RGBA32, 0);
 		cudaHostGetDevicePointer(&d_yv12, h_YV12, 0);*/
 		cudaMalloc((void**)&d_yv12, size * 3 / 2 * sizeof(unsigned char));//input
+		cudaMalloc((void**)&d_o_rgba32, size * 4 * sizeof(unsigned char));//fake input
 		cudaMalloc((void**)&d_rgba32, size * 4 * sizeof(unsigned char));//output
 		//inter vars
 		cudaMalloc((void **)&d_img, size * sizeof(unsigned int));
@@ -84,14 +85,29 @@ namespace GCL
 		result = YV12toARGB32(d_yv12, d_rgba32, width, height, deviceid);
 		result = ARGB32toUINT32(d_rgba32, d_img, width, height, deviceid);
 		result = gaussianFilterRGBA(d_img, d_result1, d_temp1, width, height, sigma1, order, nthreads, deviceid);
-		/*result = gaussianFilterRGBA(d_img, d_result2, d_temp2, width, height, sigma2, order, nthreads, deviceid);
+		result = gaussianFilterRGBA(d_img, d_result2, d_temp2, width, height, sigma2, order, nthreads, deviceid);
 		result = gaussianFilterRGBA(d_img, d_result3, d_temp3, width, height, sigma3, order, nthreads, deviceid);
 		result = logAve(d_logave, d_img, d_result1, d_result2, d_result3, width, height, deviceid);
-		result = h_Rescale(d_rgba32, d_logave, 1.0f, -1.3f, 0.95f, -1.25f, 0.85f, -1.1f, width, height, deviceid);*/
+		result = h_Rescale(d_rgba32, d_logave, 1.0f, -1.3f, 0.95f, -1.25f, 0.85f, -1.1f, width, height, deviceid);
 		//cudaDeviceSynchronize();
 		cudaMemcpy(h_RGBA32, d_rgba32, width * height * 4 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+		//delete[] d_results;
 		//QueryPerformanceCounter(&end);
 		//printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
+		return result;
+	}
+
+	int ColorTransform::ColorTrans_RetineX(unsigned char* h_o_RGBA32, unsigned char* h_RGBA32, int deviceid)
+	{
+		int result;
+		cudaMemcpy(d_o_rgba32, h_o_RGBA32, width * height * 4 * sizeof(unsigned char), cudaMemcpyHostToDevice);
+		result = ARGB32toUINT32(d_o_rgba32, d_img, width, height, deviceid);
+		result = gaussianFilterRGBA(d_img, d_result1, d_temp1, width, height, sigma1, order, nthreads, deviceid);
+		result = gaussianFilterRGBA(d_img, d_result2, d_temp2, width, height, sigma2, order, nthreads, deviceid);
+		result = gaussianFilterRGBA(d_img, d_result3, d_temp3, width, height, sigma3, order, nthreads, deviceid);
+		result = logAve(d_logave, d_img, d_result1, d_result2, d_result3, width, height, deviceid);
+		result = h_Rescale(d_rgba32, d_logave, 1.0f, -1.3f, 0.95f, -1.25f, 0.85f, -1.1f, width, height, deviceid);
+		cudaMemcpy(h_RGBA32, d_rgba32, width * height * 4 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 		return result;
 	}
 
