@@ -43,8 +43,12 @@ order  - filter order (0, 1 or 2)
 
 // 8-bit RGBA version
 extern "C"
-void gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int height, float sigma, int order, int nthreads)
+int gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int height, float sigma, int order, int nthreads, int deviceid)
 {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaSetDevice(deviceid);
+	if (cudaStatus != cudaSuccess)
+		return cudaStatus;
 	// compute filter coefficients
 	const float
 		nsigma = sigma < 0.1f ? 0.1f : sigma,
@@ -92,7 +96,7 @@ void gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int 
 
 	default:
 		fprintf(stderr, "gaussianFilter: invalid order parameter!\n");
-		return;
+		return -1;
 	}
 
 	coefp = (a0 + a1) / (1 + b1 + b2);
@@ -116,33 +120,50 @@ void gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int 
 	d_recursiveGaussian_rgba << < iDivUp(height, nthreads), nthreads >> >(d_dest, d_temp, height, width, a0, a1, a2, a3, b1, b2, coefp, coefn);
 #endif
 	getLastCudaError("Kernel execution failed");
-
+	
 	transpose(d_temp, d_dest, height, width);
+	cudaStatus = cudaGetLastError();
+	return cudaStatus;
 }
 
 extern "C"
-void ARGB32toUINT32(unsigned char* pARGB, uint* pUINT, int width, int height, int deviceid)
+int ARGB32toUINT32(unsigned char* pARGB, uint* pUINT, int width, int height, int deviceid)
 {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaSetDevice(deviceid);
+	if (cudaStatus != cudaSuccess)
+		return cudaStatus;
 	const dim3 blockSize(24, 24, 1);
 	const dim3 gridSize((width / 16), (height / 16), 1);
 	uchar_to_uint << <gridSize, blockSize >> >(pARGB, pUINT, width, height);
-	getLastCudaError("Kernel execution failed");
+	cudaStatus = cudaGetLastError();
+	return cudaStatus;
 }
 
 extern "C"
-void logAve(float* logAveImage, uint* rgbaImage, uint* BlurImage1, uint* BlurImage2, uint* BlurImage3, int Width, int Height)
+int logAve(float* logAveImage, uint* rgbaImage, uint* BlurImage1, uint* BlurImage2, uint* BlurImage3, int Width, int Height, int deviceid)
 {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaSetDevice(deviceid);
+	if (cudaStatus != cudaSuccess)
+		return cudaStatus;
 	const dim3 blockSize(24, 24, 1);
 	const dim3 gridSize((Width / 16), (Height / 16), 1);
 	LogAve << < gridSize, blockSize >> >(logAveImage, rgbaImage, BlurImage1, BlurImage2, BlurImage3, Width, Height);
-	getLastCudaError("Kernel execution failed");
+	cudaStatus = cudaGetLastError();
+	return cudaStatus;
 }
 
 extern "C"
-void h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height)
+int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height, int deviceid)
 {
+	cudaError_t cudaStatus;
+	cudaStatus = cudaSetDevice(deviceid);
+	if (cudaStatus != cudaSuccess)
+		return cudaStatus;
 	const dim3 blockSize(24, 24, 1);
 	const dim3 gridSize((Width / 16), (Height / 16), 1);
 	Rescale << < gridSize, blockSize >> >(reScaledImage, logAveImage, max1, min1, max2, min2, max3, min3, Width, Height);
-	getLastCudaError("Kernel execution failed");
+	cudaStatus = cudaGetLastError();
+	return cudaStatus;
 }

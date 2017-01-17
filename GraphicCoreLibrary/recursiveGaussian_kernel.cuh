@@ -72,6 +72,39 @@ __device__ float checkAndave(float ori, float i1, float i2, float i3)
 
 __global__ void Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height)
 {
+	float mean1 = 0, var1 = 0;
+	float mean2 = 0, var2 = 0;
+	float mean3 = 0, var3 = 0;
+	for (int i = 0; i < Width; i++)
+	{
+		for (int j = 0; j < Height; j++)
+		{
+			mean1 += logAveImage[(i*Width + j) * 3];
+			mean2 += logAveImage[(i*Width + j) * 3 + 1];
+			mean3 += logAveImage[(i*Width + j) * 3 + 2];
+		}
+	}
+	mean1 /= Width*Height;
+	mean2 /= Width*Height;
+	mean3 /= Width*Height;
+	for (int i = 0; i < Width; i++)
+	{
+		for (int j = 0; j < Height; j++)
+		{
+			var1 += (logAveImage[(i*Width + j) * 3] - mean1)*(logAveImage[(i*Width + j) * 3] - mean1);
+			var2 += (logAveImage[(i*Width + j) * 3 + 1] - mean2)*(logAveImage[(i*Width + j) * 3 + 1] - mean2);
+			var3 += (logAveImage[(i*Width + j) * 3 + 2] - mean3)*(logAveImage[(i*Width + j) * 3 + 2] - mean3);
+		}
+	}
+	var1 = sqrt(var1 / (Width*Height - 1));
+	var2 = sqrt(var2 / (Width*Height - 1));
+	var3 = sqrt(var3 / (Width*Height - 1));
+	max1 = mean1 + 2 * var1;
+	max2 = mean2 + 2 * var2;
+	max3 = mean3 + 2 * var3;
+	min1 = mean1 - 2 * var1;
+	min2 = mean2 - 2 * var2;
+	min3 = mean3 - 2 * var3;
 	int pos_x = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int pos_y = (blockIdx.y * blockDim.y) + threadIdx.y;
 	if (pos_x >= Width || pos_y >= Height)
