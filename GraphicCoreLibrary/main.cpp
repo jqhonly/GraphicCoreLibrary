@@ -44,11 +44,11 @@ void decoder()
 	QueryPerformanceFrequency(&Freq);
 	//**********
 	unsigned int width, height;
-	unsigned char* t_rgba = LoadPng("C:\\Research\\test_project_cuda\\x64\\Debug\\d.png", width, height);
-	/*width = 1280;
-	height = 720;*/
+	//unsigned char* t_rgba = LoadPng("C:\\Research\\test_project_cuda\\x64\\Debug\\d.png", width, height);
+	width = 1280;
+	height = 720;
 	//init
-	ColorTransform ctrans(width, height);
+	ColorTransform ctrans(width, height, 1);
 	//malloc memory space
 	unsigned char *input = (unsigned char*)malloc(width * height * 3 / 2 * sizeof(unsigned char));
 	unsigned char *output = (unsigned char*)malloc(width * height * 4 * sizeof(unsigned char));
@@ -68,7 +68,7 @@ void decoder()
 			input[i] = i*(10 - j) % 255;
 		}
 		QueryPerformanceCounter(&start);
-		ctrans.ColorTrans_YV12toARGB32_RetineX(input, output, 0);
+		ctrans.ColorTrans_YV12toARGB32_RetineX(input, output);
 		QueryPerformanceCounter(&end);
 		printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
 	}

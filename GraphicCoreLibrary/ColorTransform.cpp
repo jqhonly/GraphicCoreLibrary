@@ -15,13 +15,15 @@ int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, floa
 
 namespace GCL
 {
-	ColorTransform::ColorTransform(int _width, int _height)
+	ColorTransform::ColorTransform(int _width, int _height, int _deviceid)
 	{
 		width = _width;
 		height = _height;
 		size = width * height;
+		deviceid = _deviceid;
+		cudaSetDevice(deviceid);//error check require!
 		cudaMalloc((void**)&d_yv12, size * 3 / 2 * sizeof(unsigned char));//input
-		cudaMalloc((void**)&d_o_rgba32, size * 4 * sizeof(unsigned char));//fake input//Detete before release!!
+		cudaMalloc((void**)&d_o_rgba32, size * 4 * sizeof(unsigned char));//fake input//Detete before release
 		cudaMalloc((void**)&d_rgba32, size * 4 * sizeof(unsigned char));//output
 		//inter vars
 		cudaMalloc((void **)&d_img, size * sizeof(unsigned int));
@@ -91,7 +93,7 @@ namespace GCL
 	}
 
 
-	int ColorTransform::ColorTrans_YV12toARGB32(unsigned char* h_YV12, unsigned char* h_RGBA32, int deviceid)
+	int ColorTransform::ColorTrans_YV12toARGB32(unsigned char* h_YV12, unsigned char* h_RGBA32)
 	{
 		int result;
 		cudaMemcpy(d_yv12, h_YV12, size * 3 / 2 * sizeof(unsigned char), cudaMemcpyHostToDevice);
@@ -100,7 +102,7 @@ namespace GCL
 		return result;
 	}
 
-	int ColorTransform::ColorTrans_YV12toARGB32_RetineX(unsigned char* h_YV12, unsigned char* h_RGBA32, int deviceid)
+	int ColorTransform::ColorTrans_YV12toARGB32_RetineX(unsigned char* h_YV12, unsigned char* h_RGBA32)
 	{
 		int result;
 		cudaMemcpy(d_yv12, h_YV12, size * 3 / 2 * sizeof(unsigned char), cudaMemcpyHostToDevice);
@@ -118,7 +120,7 @@ namespace GCL
 	}
 
 	//Test function, hid this kind of detials before release
-	int ColorTransform::ColorTrans_RetineX(unsigned char* h_o_RGBA32, unsigned char* h_RGBA32, int deviceid)
+	int ColorTransform::ColorTrans_RetineX(unsigned char* h_o_RGBA32, unsigned char* h_RGBA32)
 	{
 		int result;
 		cudaMemcpy(d_o_rgba32, h_o_RGBA32, size * 4 * sizeof(unsigned char), cudaMemcpyHostToDevice);
