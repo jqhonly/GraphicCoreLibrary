@@ -163,7 +163,7 @@ int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, floa
 		return cudaStatus;
 	const dim3 blockSize(24, 24, 1);
 	const dim3 gridSize((Width / 16), (Height / 16), 1);
-	Rescale << < gridSize, blockSize >> >(reScaledImage, logAveImage, max1, min1, max2, min2, max3, min3, Width, Height);
+	Rescale << < gridSize, blockSize >> > (reScaledImage, logAveImage, max1, min1, max2, min2, max3, min3, Width, Height);
 	cudaStatus = cudaGetLastError();
 	return cudaStatus;
 }

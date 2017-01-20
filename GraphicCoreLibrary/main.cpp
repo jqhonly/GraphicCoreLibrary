@@ -44,28 +44,38 @@ void decoder()
 	QueryPerformanceFrequency(&Freq);
 	//**********
 	unsigned int width, height;
-	unsigned char* t_rgba = LoadPng("C:\\Research\\test_project_cuda\\x64\\Debug\\g.png", width, height);
+	//unsigned char* t_rgba = LoadPng("C:\\Research\\test_project_cuda\\x64\\Debug\\d.png", width, height);
+	width = 1280;
+	height = 720;
 	//init
-	ColorTransform ctrans(width, height);
+	ColorTransform ctrans(width, height, -1);
 	//malloc memory space
 	unsigned char *input = (unsigned char*)malloc(width * height * 3 / 2 * sizeof(unsigned char));
 	unsigned char *output = (unsigned char*)malloc(width * height * 4 * sizeof(unsigned char));
-	ctrans.ColorTrans_RetineX(t_rgba, output, 0);
-	/*for (size_t j = 0; j < 10; j++)
+	
+	/*for (int i = 0; i < 10; i++)
 	{
-		for (size_t i = 0; i < 1280 * 720 * 3 / 2; i++)
+		QueryPerformanceCounter(&start);
+		ctrans.ColorTrans_RetineX(t_rgba, output, 0);
+		QueryPerformanceCounter(&end);
+		printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
+	}*/
+	
+	for (size_t j = 0; j < 10; j++)
+	{
+		for (size_t i = 0; i < width * height * 3 / 2; i++)
 		{
 			input[i] = i*(10 - j) % 255;
 		}
 		QueryPerformanceCounter(&start);
-		ctrans.ColorTrans_YV12toARGB32_RetineX(input, output, 0);
+		ctrans.ColorTrans_YV12toARGB32(input, output);
 		QueryPerformanceCounter(&end);
 		printf("execute time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
-	}*/
+	}
 	//fake data
-	SavePng("C:\\Research\\test_project_cuda\\x64\\Debug\\color_shfRe_.png", output, width, height);
+	SavePng("C:\\Research\\test_project_cuda\\x64\\Debug\\color_shf_.png", output, width, height);
 
-	for (size_t i = 0; i < 10; i++)
+  	for (size_t i = 0; i < 10; i++)
 	{
 		printf("output: %d\n", output[i]);
 	}

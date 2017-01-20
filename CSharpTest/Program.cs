@@ -12,12 +12,12 @@ namespace CSharpTest
     {
         static void Main(string[] args)
         {
-            byte [] yv12=new byte[1280*720*3/2];
-            byte [] rgba32=new byte[1280*720*4];
+            byte[] yv12 = new byte[1280*720*3/2];
+            byte[] rgba32 = new byte[1280*720*4];
             
-            GCLSharp.ColorTransSharp ctrans = new ColorTransSharp(1280, 720);
+            ColorTransSharp ctrans = new ColorTransSharp(1280, 720, 1);
             Stopwatch sw=new Stopwatch();
-            for (int j = 0; j < 20; j++)
+            for (int j = 0; j < 10; j++)
             {
                 for (int i = 0; i < 1280 * 720 * 3 / 2; i++)
                 {
@@ -25,7 +25,7 @@ namespace CSharpTest
                 }
                 sw.Reset();
                 sw.Start();
-                Console.WriteLine("CUDA Error: " + ctrans.Managed_ColorTrans_YV12toARGB32(yv12, rgba32, 0));
+                Console.WriteLine("CUDA Error: " + ctrans.Managed_ColorTrans_YV12toARGB32_RetineX(yv12, rgba32));
                 sw.Stop();
                 Console.WriteLine(sw.ElapsedMilliseconds+ "ms");
             }
