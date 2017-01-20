@@ -44,7 +44,7 @@
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -173,6 +173,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <None Include="ColorTransform.cuh" />
     <ClInclude Include="CameraManagement.h" />
     <ClInclude Include="ColorTransform.h" />
+    <ClInclude Include="CpuBitmap.h" />
+    <ClInclude Include="GpuBitmap.h" />
     <ClInclude Include="lodepng.h" />
   </ItemGroup>
   <ItemGroup>

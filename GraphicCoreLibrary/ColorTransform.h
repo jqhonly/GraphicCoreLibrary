@@ -43,6 +43,7 @@ namespace GCL
 		float min3 = NULL;
 
 		void GetManMinValue(float * logAveImage);
+		int ColorTrans_YV12toARGB32_CPU(unsigned char *yv12, unsigned char *rgba32);
 	public:
 		ColorTransform(int _width, int _height, int _deviceid);
 
@@ -53,5 +54,9 @@ namespace GCL
 		int ColorTrans_YV12toARGB32_RetineX(unsigned char* h_YV12, unsigned char* h_RGBA32);
 
 		int ColorTrans_RetineX(unsigned char* h_o_RGBA32, unsigned char* h_RGBA32);
+
+		int ResetDeviceID(int _deviceid);
+
+		int GetCurrentDeviceID();
 	};
 }
