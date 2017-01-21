@@ -6,8 +6,8 @@ namespace GCL
 	class GpuBitmap
 	{
 	public:
-		unsigned char* d_CpuData;
-		float * d_float_CpuData;
+		unsigned char* d_GpuData;
+		float * d_float_GpuData;
 		int width;
 		int height;
 		int depth;

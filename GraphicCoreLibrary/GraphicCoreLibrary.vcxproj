@@ -165,6 +165,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   <ItemGroup>
     <ClCompile Include="CameraManagement.cpp" />
     <ClCompile Include="ColorTransform.cpp" />
+    <ClCompile Include="CpuBitmap.cpp" />
+    <ClCompile Include="GpuBitmap.cpp" />
     <ClCompile Include="lodepng.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
