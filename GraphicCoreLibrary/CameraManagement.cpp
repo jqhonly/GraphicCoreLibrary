@@ -1,163 +1,315 @@
+#include <HCNetSDK.h>
+#include <PlayM4.h>
+
 #include "CameraManagement.h"
+#include "ColorTransform.h"
 
-namespace Camera
-{
-	void CALLBACK HikVision::DecCBFun(long nPort, char * pBuf, long nSize, FRAME_INFO * pFrameInfo, void *pUser, void* nReserved2)
-	{
-		printf("pUser:%p\n", pUser);
-		//¼Ó¾²Ì¬¶ÁĞ´Ëø
-		backdata.pBuf = pBuf;
-		backdata.pUser = pUser;
-		//ÊÍ·Å¾²Ì¬¶ÁĞ´Ëø
-	}
+#include <string>
+#include <unordered_map>
 
-	///ÊµÊ±Á÷»Øµ÷
-	void CALLBACK HikVision::fRealDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser)
-	{
-		DWORD dRet;
-		switch (dwDataType)
-		{
-		case NET_DVR_SYSHEAD:    //ÏµÍ³Í·
-			if (!PlayM4_GetPort(&nPort)) //»ñÈ¡²¥·Å¿âÎ´Ê¹ÓÃµÄÍ¨µÀºÅ
-			{
-				break;
-			}
-			if (dwBufSize > 0)
-			{
-				if (!PlayM4_OpenStream(nPort, pBuffer, dwBufSize, 2 * 1024 * 1024))
-				{
-					dRet = PlayM4_GetLastError(nPort);
-					printf("PlayM4_OpenStream Failed!:%d\n", dRet);
-					break;
-				}
-				//ÉèÖÃ½âÂë»Øµ÷º¯Êı Ö»½âÂë²»ÏÔÊ¾
-				if (!PlayM4_SetDecCallBackExMend(nPort, HikVision::DecCBFun, NULL, 0, pUser))
-				{
-					dRet = PlayM4_GetLastError(nPort);
-					break;
-				}
+#include <unistd.h>
+using namespace cv;
+using namespace std;
 
-				if (!PlayM4_ThrowBFrameNum(nPort, 2))
-				{
-					dRet = PlayM4_GetLastError(nPort);
-					break;
-				}
+namespace HikSdk {
 
-				//´ò¿ªÊÓÆµ½âÂë
-				if (!PlayM4_Play(nPort, hWnd))
-				{
-					dRet = PlayM4_GetLastError(nPort);
-					break;
-				}
-			}
-			break;
+#define USECOLOR 1
 
-		case NET_DVR_STREAMDATA:   //ÂëÁ÷Êı¾İ
-			if (dwBufSize > 0 && nPort != -1)
-			{
-				BOOL inData = PlayM4_InputData(nPort, pBuffer, dwBufSize);
-				while (!inData)
-				{
-					Sleep(10);
-					inData = PlayM4_InputData(nPort, pBuffer, dwBufSize);
-					printf("PlayM4_InputData failed \n");
-				}
-			}
-			break;
-		default:
-			break;
-		}
-	}
+    static std::unordered_map<int, int> portMap;
+    static std::unordered_map<int, unique_ptr<Mat>> matMap;
+    static unique_ptr<cv::Mat> nullMat;
 
-	void CALLBACK HikVision::g_ExceptionCallBack(DWORD dwType, LONG lUserID, LONG lHandle, void *pUser)
-	{
-		switch (dwType)
-		{
-		case EXCEPTION_RECONNECT:    //Ô¤ÀÀÊ±ÖØÁ¬
-			printf("----------reconnect--------\n");
-			break;
-		default:
-			break;
-		}
-	}
+/*
+#define CLIP(value) (uchar)(((value)>0xFF)?0xff:(((value)<0)?0:(value)))
+    static int yv12_to_rgb(unsigned char *yv12, unsigned char *rgb, unsigned int width, unsigned int height)
+    {
+        uchar *py;
+        uchar *pu;
+        uchar *pv;//æ­¤éƒ¨åˆ†æ³¨é‡Šè§å¦ä¸€ç¯‡yuyv_to_yv12
+        uint linesize = width * 3;
+        uint uvlinesize = width / 2;
+        uint offset=0;
+        uint offset1=0;
+        uint offsety=0;
+        uint offsety1=0;
+        uint offsetuv=0;
 
-	void HikVision::play() {
-		//---------------------------------------
-		// ³õÊ¼»¯
-		NET_DVR_Init();
-		//ÉèÖÃÁ¬½ÓÊ±¼äÓëÖØÁ¬Ê±¼ä
-		NET_DVR_SetConnectTime(2000, 1);
-		NET_DVR_SetReconnect(10000, true);
+        py = yv12;
+        pv = py+(width*height);
+        pu = pv+((width*height)/4);
 
-		//---------------------------------------
-		// »ñÈ¡¿ØÖÆÌ¨´°¿Ú¾ä±ú
-		//HMODULE hKernel32 = GetModuleHandle((LPCWSTR)"kernel32");
-		//GetConsoleWindow = (PROCGETCONSOLEWINDOW)GetProcAddress(hKernel32,"GetConsoleWindow");
+        uint h=0;
+        uint w=0;
 
-		//---------------------------------------
-		// ×¢²áÉè±¸
-		NET_DVR_DEVICEINFO_V30 struDeviceInfo;
-		lUserID = NET_DVR_Login_V30("192.168.0.65", 8000, "admin", "hk123456", &struDeviceInfo);
-		if (lUserID < 0)
-		{
-			printf("Login error, %d\n", NET_DVR_GetLastError());
-			NET_DVR_Cleanup();
-			return;
-		}
-		std::string SerialNumber = std::string((char *)struDeviceInfo.sSerialNumber);
-		char *spSerialNumber = new char[SerialNumber.length()];
-		strcpy(spSerialNumber, SerialNumber.c_str());
-		pSerialNumber = (const char*)spSerialNumber;
+        uint wy=0;
+        uint huv=0;
+        uint wuv=0;
 
-		//---------------------------------------
-		//ÉèÖÃÒì³£ÏûÏ¢»Øµ÷º¯Êı
-		NET_DVR_SetExceptionCallBack_V30(0, hWnd, HikVision::g_ExceptionCallBack, (void*)pSerialNumber);
+        for(h=0;h<height;h+=2)
+        {
+            wy=0;
+            wuv=0;
+            offset = h * linesize;
+            offset1 = (h + 1) * linesize;
+            offsety = h * width;
+            offsety1 = (h + 1) * width;
+            offsetuv = huv * uvlinesize;
 
-		NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
-		struPlayInfo.hPlayWnd = hWnd;         //ĞèÒªSDK½âÂëÊ±¾ä±úÉèÎªÓĞĞ§Öµ£¬½öÈ¡Á÷²»½âÂëÊ±¿ÉÉèÎª¿Õ
-		struPlayInfo.lChannel = 1;       //Ô¤ÀÀÍ¨µÀºÅ
-		struPlayInfo.dwStreamType = 0;       //0-Ö÷ÂëÁ÷£¬1-×ÓÂëÁ÷£¬2-ÂëÁ÷3£¬3-ÂëÁ÷4£¬ÒÔ´ËÀàÍÆ
-		struPlayInfo.dwLinkMode = 0;       //0- TCP·½Ê½£¬1- UDP·½Ê½£¬2- ¶à²¥·½Ê½£¬3- RTP·½Ê½£¬4-RTP/RTSP£¬5-RSTP/HTTP
+            for(w=0;w<linesize;w+=6)
+            {
+                /* standart: r = y0 + 1.402 (v-128) */
+                /* logitech: r = y0 + 1.370705 (v-128) */
+                rgb[w + offset] = CLIP(py[wy + offsety] + 1.402 * (pv[wuv + offsetuv]-128));
+                /* standart: g = y0 - 0.34414 (u-128) - 0.71414 (v-128)*/
+                /* logitech: g = y0 - 0.337633 (u-128)- 0.698001 (v-128)*/
+                rgb[(w + 1) + offset] = CLIP(py[wy + offsety] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
+                /* standart: b = y0 + 1.772 (u-128) */
+                /* logitech: b = y0 + 1.732446 (u-128) */
+                rgb[(w + 2) + offset] = CLIP(py[wy + offsety] + 1.772 *(pu[wuv + offsetuv]-128));
 
-		lRealPlayHandle = NET_DVR_RealPlay_V40(lUserID, &struPlayInfo, HikVision::fRealDataCallBack, (void*)pSerialNumber);
+                rgb[(w + 3) + offset] = CLIP(py[wy + 1 + offsety] + 1.402 * (pv[wuv + offsetuv]-128));
+                rgb[(w + 4) + offset] = CLIP(py[wy +1  + offsety] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
+                rgb[(w + 5) + offset] = CLIP(py[wy + 1 + offsety] + 1.772 *(pu[wuv + offsetuv]-128));
 
-		if (lRealPlayHandle<0)
-		{
-			NET_DVR_Logout(lUserID);
-			printf("NET_DVR_RealPlay_V30 failed! Error number: %d\n", NET_DVR_GetLastError());
-			return;
-		}
-	}
+                rgb[w + offset1] = CLIP(py[wy + offsety1] + 1.402 * (pv[wuv + offsetuv]-128));
+                rgb[(w + 1) + offset1] = CLIP(py[wy + offsety1] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
+                rgb[(w + 2) + offset1] = CLIP(py[wy + offsety1] + 1.772 *(pu[wuv + offsetuv]-128));
 
-	void HikVision::stop()
-	{
-		//--------------------------------------
-		//¹Ø±ÕÔ¤ÀÀ
-		if (!NET_DVR_StopRealPlay(lRealPlayHandle))
-		{
-			printf("NET_DVR_StopRealPlay error! Error number: %d\n", NET_DVR_GetLastError());
-		}
-		//×¢ÏúÓÃ»§
-		NET_DVR_Logout(lUserID);
-		NET_DVR_Cleanup();
-	}
+                rgb[(w + 3) + offset1] = CLIP(py[wy + 1 + offsety1] + 1.402 * (pv[wuv + offsetuv]-128));
+                rgb[(w + 4) + offset1] = CLIP(py[wy + 1 + offsety1] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
+                rgb[(w + 5) + offset1] = CLIP(py[wy + 1 + offsety1] + 1.772 *(pu[wuv + offsetuv]-128));
 
-	const char *HikVision::getSerialNumber() const {
-		return pSerialNumber;
-	}
+                wuv++;
+                wy+=2;
+            }
+            huv++;
+        }
+        return 0;
+    }
+*/
 
-	HikVision::~HikVision() {
-		delete[] pSerialNumber;
-	}
+    //--------------------------------------------
+    //è§£ç å›è°ƒ è§†é¢‘ä¸ºYUVæ•°æ®(YV12)ï¼ŒéŸ³é¢‘ä¸ºPCMæ•°æ®
+    static void CALLBACK DecCBFun(int nPort,char * pBuf,int nSize,FRAME_INFO * pFrameInfo, int nUser,int nReserved2)
+    {
+
+        int lFrameType = pFrameInfo->nType;
+
+        if(lFrameType == T_YV12)
+        {
+    #if USECOLOR
+            
+            Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC4);
+            
+            int x = YV12toARGB32((unsigned char *)pBuf, pImg->data, 1280, 720, 0);
+
+    #else
+            Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC1);
+            memcpy(pImg->data,pBuf,pFrameInfo->nWidth*pFrameInfo->nHeight);
+
+    #endif
+            matMap[nUser].reset(pImg);
+        }
+    }
+
+
+    ///å®æ—¶æµå›è°ƒ
+    static void CALLBACK fRealDataCallBack(LONG lRealHandle,DWORD dwDataType,BYTE *pBuffer,DWORD dwBufSize,void *pUser)
+    {
+        DWORD dRet;
+        switch (dwDataType)
+        {
+        case NET_DVR_SYSHEAD:    //ç³»ç»Ÿå¤´
+        {
+            LONG nPort;
+            if (!PlayM4_GetPort(&nPort)) //è·å–æ’­æ”¾åº“æœªä½¿ç”¨çš„é€šé“å·
+            {
+                dRet=PlayM4_GetLastError(nPort);
+                printf("PlayM4_GetPort Failed!:%d\n", dRet);
+                break;
+            }
+
+            portMap[reinterpret_cast<long>(pUser)] = nPort;
+
+            if(dwBufSize > 0)
+            {
+                if (!PlayM4_OpenStream(nPort,pBuffer,dwBufSize,2*1024*1024))
+                {
+                    dRet=PlayM4_GetLastError(nPort);
+                    printf("PlayM4_OpenStream Failed!:%d\n", dRet);
+                    break;
+                }
+                //è®¾ç½®è§£ç å›è°ƒå‡½æ•° åªè§£ç ä¸æ˜¾ç¤º
+                if (!PlayM4_SetDecCallBackExMend(nPort, DecCBFun, NULL, 0, reinterpret_cast<long>(pUser)))
+                {
+                    dRet=PlayM4_GetLastError(nPort);
+                    printf("PlayM4_SetDecCallBackExMend Failed!:%d\n", dRet);
+                    break;
+                }
+
+                if(!PlayM4_ThrowBFrameNum(nPort, 2))
+                {
+                    dRet=PlayM4_GetLastError(nPort);
+                    printf("PlayM4_ThrowBFrameNum Failed!:%d\n", dRet);
+                    break;
+                }
+
+                //æ‰“å¼€è§†é¢‘è§£ç 
+                if (!PlayM4_Play(nPort, NULL))
+               {
+                  dRet=PlayM4_GetLastError(nPort);
+                  printf("PlayM4_Play Failed!:%d\n", dRet);
+                  break;
+                }
+            }
+            break;
+        }
+
+        case NET_DVR_STREAMDATA:   //ç æµæ•°æ®
+        {
+            int port = portMap[reinterpret_cast<long>(pUser)];
+            if (dwBufSize > 0 &&  port!= -1)
+            {
+                BOOL inData = PlayM4_InputData(port, pBuffer, dwBufSize);
+                while (!inData)
+                {
+                    sleep(10);
+                    inData = PlayM4_InputData(port, pBuffer, dwBufSize);
+                    printf("PlayM4_InputData failed \n");
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    static void CALLBACK g_ExceptionCallBack(DWORD dwType, LONG lUserID, LONG lHandle, void *pUser)
+    {
+        switch(dwType)
+        {
+        case EXCEPTION_RECONNECT:    //é¢„è§ˆæ—¶é‡è¿
+            printf("----------reconnect--------\n");
+            break;
+        default:
+            break;
+        }
+    }
+
+    void Camera::play() {
+        if(!PlayFlag) {
+            //---------------------------------------
+            // åˆå§‹åŒ–
+            NET_DVR_Init();
+            //è®¾ç½®è¿æ¥æ—¶é—´ä¸é‡è¿æ—¶é—´
+            NET_DVR_SetConnectTime(2000, 1);
+            NET_DVR_SetReconnect(10000, true);
+
+            //---------------------------------------
+            // è·å–æ§åˆ¶å°çª—å£å¥æŸ„
+            //HMODULE hKernel32 = GetModuleHandle((LPCWSTR)"kernel32");
+            //GetConsoleWindow = (PROCGETCONSOLEWINDOW)GetProcAddress(hKernel32,"GetConsoleWindow");
+
+            //---------------------------------------
+            // æ³¨å†Œè®¾å¤‡
+            NET_DVR_DEVICEINFO_V30 struDeviceInfo;
+            lUserID = NET_DVR_Login_V30((char *)ip.c_str(), port, (char *)account.c_str(), (char *)pwd.c_str(), &struDeviceInfo);
+            if (lUserID < 0)
+            {
+                printf("Login error, %d\n", NET_DVR_GetLastError());
+                NET_DVR_Cleanup();
+                return;
+            }
+
+            char *spSerialNumber = new char[SERIALNO_LEN];
+            strcpy(spSerialNumber, (const char *)struDeviceInfo.sSerialNumber);
+            pSerialNumber = static_cast<const char*>(spSerialNumber);
+
+            //---------------------------------------
+            //è®¾ç½®å¼‚å¸¸æ¶ˆæ¯å›è°ƒå‡½æ•°
+            NET_DVR_SetExceptionCallBack_V30(0, NULL, g_ExceptionCallBack, const_cast<char*>(pSerialNumber));
+
+            NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
+            struPlayInfo.hPlayWnd = NULL;         //éœ€è¦SDKè§£ç æ—¶å¥æŸ„è®¾ä¸ºæœ‰æ•ˆå€¼ï¼Œä»…å–æµä¸è§£ç æ—¶å¯è®¾ä¸ºç©º
+            struPlayInfo.lChannel = 1;       //é¢„è§ˆé€šé“å·
+            struPlayInfo.dwStreamType = 0;       //0-ä¸»ç æµï¼Œ1-å­ç æµï¼Œ2-ç æµ3ï¼Œ3-ç æµ4ï¼Œä»¥æ­¤ç±»æ¨
+            struPlayInfo.dwLinkMode = 0;       //0- TCPæ–¹å¼ï¼Œ1- UDPæ–¹å¼ï¼Œ2- å¤šæ’­æ–¹å¼ï¼Œ3- RTPæ–¹å¼ï¼Œ4-RTP/RTSPï¼Œ5-RSTP/HTTP
+
+            lRealPlayHandle = NET_DVR_RealPlay_V40(lUserID, &struPlayInfo, fRealDataCallBack, reinterpret_cast<void*>(lUserID));
+
+            if (lRealPlayHandle<0)
+            {
+                NET_DVR_Logout(lUserID);
+                NET_DVR_Cleanup();
+                printf("NET_DVR_RealPlay_V30 failed! Error number: %d\n", NET_DVR_GetLastError());
+                return;
+            }
+
+            matMap.insert(std::unordered_map<int, unique_ptr<Mat>>::value_type(lUserID, unique_ptr<Mat>()));
+            PlayFlag = true;
+        }
+    }
+
+    void Camera::stop()
+    {
+        //--------------------------------------
+        //å…³é—­é¢„è§ˆ
+        if(lRealPlayHandle < 0)
+            return;
+
+        if(!NET_DVR_StopRealPlay(lRealPlayHandle))
+        {
+            printf("NET_DVR_StopRealPlay error! Error number: %d\n",NET_DVR_GetLastError());
+            return;
+        }
+
+        lRealPlayHandle = -1;
+        PlayFlag = false;
+
+        //æ³¨é”€ç”¨æˆ·
+        NET_DVR_Logout(lUserID);
+
+        portMap.erase(lUserID);
+        matMap[lUserID].reset(nullptr);
+        matMap.erase(lUserID);
+
+        lUserID = -1;
+
+        NET_DVR_Cleanup();
+    }
+
+    unique_ptr<cv::Mat>&& Camera::getFrame() const {
+        std::unordered_map<int, unique_ptr<cv::Mat>>::iterator ite = matMap.find(lUserID);
+        if(PlayFlag  && ite->second != nullptr ) {
+            return std::move(ite->second);
+        }
+        else {
+            return std::move(nullMat);
+        }
+    }
+
+    const char *Camera::getSerialNumber() const {
+        return pSerialNumber;
+    }
+
+    int Camera::getUserId() const {
+        return lUserID;
+    }
+
+    Camera::Camera(const char *ip, int port, const char *account, const char *pwd):PlayFlag(false),
+                                                                         pSerialNumber(NULL),
+                                                                         lRealPlayHandle(-1),
+                                                                         lUserID(-1) {
+        this->ip = ip;
+        this->port = port;
+        this->account = account;
+        this->pwd = pwd;
+    }
+
+    Camera::~Camera() {
+        stop();
+        delete[] pSerialNumber;
+    }
+
 }
-
-
-//void main() {
-//	Camera::HikVision HikVision;
-//	HikVision.play();
-//	while (1) {
-//		//printf("SerialNumber: %s\n", HikVision.getSerialNumber());
-//		Sleep(100);
-//	}
-//	HikVision.stop();
-//}
