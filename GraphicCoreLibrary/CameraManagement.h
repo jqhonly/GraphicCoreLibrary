@@ -1,39 +1,37 @@
-#pragma once
-#include <HCNetSDK.h>
-#include <PlayM4.h>
-#include <string>
+#ifndef VIDEO_H
+#define VIDEO_H
 
-namespace Camera
-{
-	typedef struct {
-		char *pBuf;
-		void *pUser;
-	}CallBackData;
+#include <opencv2/opencv.hpp>
 
-	static LONG nPort; //1.这个参数在不同摄像头调用的时候怕是要做读写锁
-	static HWND hWnd;
-	static CallBackData backdata; //2.怕是也要做读写锁
+#include <memory>
 
-	 //再声明两个静态读写锁
+namespace HikSdk {
 
-	class HikVision {
+    class Camera {
 
-	public:
-		void play();
-		void stop();
-		const char *getSerialNumber() const;
-		~HikVision();
+    public:
+        explicit Camera(const char *ip, int port, const char *account, const char *pwd);
+        ~Camera();
+        void play();
+        void stop();
+        std::unique_ptr<cv::Mat>&& getFrame() const;
+        const char *getSerialNumber() const;
+        int getUserId() const;
+        bool isPlay();
 
-	private:
-		static void CALLBACK g_ExceptionCallBack(DWORD dwType, LONG lUserID, LONG lHandle, void *pUser);
-		static void CALLBACK fRealDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser);
-		static void CALLBACK DecCBFun(long nPort, char * pBuf, long nSize, FRAME_INFO * pFrameInfo, void *pUser, void* nReserved2);
-		//static int yv12_to_rgb(unsigned char *yv12, unsigned char *rgb, unsigned int width, unsigned int height);
+    private:
+        int lRealPlayHandle;
+        int lUserID;
 
-	private:
-		//cv::Mat frame;
-		LONG lRealPlayHandle;
-		LONG lUserID;
-		const char *pSerialNumber;
-	};
+        const char *pSerialNumber;
+
+        std::string ip;
+        int port;
+        std::string account;
+        std::string pwd;
+
+        bool PlayFlag;
+    };
 }
+
+#endif // VIDEO_H
