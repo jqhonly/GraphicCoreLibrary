@@ -19,74 +19,6 @@ namespace HikSdk {
     static std::unordered_map<int, unique_ptr<Mat>> matMap;
     static unique_ptr<cv::Mat> nullMat;
 
-/*
-#define CLIP(value) (uchar)(((value)>0xFF)?0xff:(((value)<0)?0:(value)))
-    static int yv12_to_rgb(unsigned char *yv12, unsigned char *rgb, unsigned int width, unsigned int height)
-    {
-        uchar *py;
-        uchar *pu;
-        uchar *pv;//此部分注释见另一篇yuyv_to_yv12
-        uint linesize = width * 3;
-        uint uvlinesize = width / 2;
-        uint offset=0;
-        uint offset1=0;
-        uint offsety=0;
-        uint offsety1=0;
-        uint offsetuv=0;
-
-        py = yv12;
-        pv = py+(width*height);
-        pu = pv+((width*height)/4);
-
-        uint h=0;
-        uint w=0;
-
-        uint wy=0;
-        uint huv=0;
-        uint wuv=0;
-
-        for(h=0;h<height;h+=2)
-        {
-            wy=0;
-            wuv=0;
-            offset = h * linesize;
-            offset1 = (h + 1) * linesize;
-            offsety = h * width;
-            offsety1 = (h + 1) * width;
-            offsetuv = huv * uvlinesize;
-
-            for(w=0;w<linesize;w+=6)
-            {
-                /* standart: r = y0 + 1.402 (v-128) */
-                /* logitech: r = y0 + 1.370705 (v-128) */
-                rgb[w + offset] = CLIP(py[wy + offsety] + 1.402 * (pv[wuv + offsetuv]-128));
-                /* standart: g = y0 - 0.34414 (u-128) - 0.71414 (v-128)*/
-                /* logitech: g = y0 - 0.337633 (u-128)- 0.698001 (v-128)*/
-                rgb[(w + 1) + offset] = CLIP(py[wy + offsety] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
-                /* standart: b = y0 + 1.772 (u-128) */
-                /* logitech: b = y0 + 1.732446 (u-128) */
-                rgb[(w + 2) + offset] = CLIP(py[wy + offsety] + 1.772 *(pu[wuv + offsetuv]-128));
-
-                rgb[(w + 3) + offset] = CLIP(py[wy + 1 + offsety] + 1.402 * (pv[wuv + offsetuv]-128));
-                rgb[(w + 4) + offset] = CLIP(py[wy +1  + offsety] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
-                rgb[(w + 5) + offset] = CLIP(py[wy + 1 + offsety] + 1.772 *(pu[wuv + offsetuv]-128));
-
-                rgb[w + offset1] = CLIP(py[wy + offsety1] + 1.402 * (pv[wuv + offsetuv]-128));
-                rgb[(w + 1) + offset1] = CLIP(py[wy + offsety1] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
-                rgb[(w + 2) + offset1] = CLIP(py[wy + offsety1] + 1.772 *(pu[wuv + offsetuv]-128));
-
-                rgb[(w + 3) + offset1] = CLIP(py[wy + 1 + offsety1] + 1.402 * (pv[wuv + offsetuv]-128));
-                rgb[(w + 4) + offset1] = CLIP(py[wy + 1 + offsety1] - 0.34414 * (pu[wuv + offsetuv]-128) -0.71414*(pv[wuv + offsetuv]-128));
-                rgb[(w + 5) + offset1] = CLIP(py[wy + 1 + offsety1] + 1.772 *(pu[wuv + offsetuv]-128));
-
-                wuv++;
-                wy+=2;
-            }
-            huv++;
-        }
-        return 0;
-    }
-*/
 
     //--------------------------------------------
     //解码回调 视频为YUV数据(YV12)，音频为PCM数据
@@ -101,7 +33,7 @@ namespace HikSdk {
             
             Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC4);
             
-            int x = YV12toARGB32((unsigned char *)pBuf, pImg->data, 1280, 720, 0);
+            int x = YV12toARGB32((unsigned char *)pBuf, pImg->data, pFrameInfo->nWidth, pFrameInfo->nHeight, 0);
 
     #else
             Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC1);
