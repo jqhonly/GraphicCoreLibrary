@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef CPUBITMAP_H
+#define CPUBITMAP_H
 namespace GCL
 {
 	class CpuBitmap
@@ -18,3 +20,5 @@ namespace GCL
 
 	};
 }
+
+#endif // CPUBITMAP_H

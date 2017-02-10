@@ -1,11 +1,11 @@
-#include <helper_math.h>
-#include <helper_cuda.h>
-#include <helper_timer.h>
+//#include <helper_math.h>
+//#include <helper_cuda.h>
+//#include <helper_timer.h>
 #include "ColorTransform.h"
+#include "CameraManagement.h"
 
 #include <windows.h>  
 #include "lodepng.h"
-//#include "CameraManagement.h"
 
 using namespace GCL;
 //using namespace Camera;
@@ -98,6 +98,39 @@ int main()
 	}
 	*/
 
-	decoder();
+	GCL::Camera camera1("192.168.0.68", 8000, "admin", "hk123456");
+	GCL::Camera camera2("192.168.0.67", 8000, "admin", "hk123456");
+
+	camera1.play();
+	camera2.play();
+
+	for(int i = 0; i < 10000; i++)
+	{
+		auto frame1 = camera1.getFrame();
+		
+		if(frame1.get() != nullptr)  //如果运行报double free， 这里改成frame1 != nullptr
+		{
+			//SavePng("C:\\Research\\GraphicCoreLibrary\\x64\\Debug\\test.png", frame1->h_CpuData, 1280, 720);
+			printf("frame1: ");
+			for(int i = 0; i < 10; i++)
+				printf("%x ", frame1->h_CpuData[i]);
+			printf("\n");
+		}
+		auto frame2 = camera2.getFrame();
+		if (frame2.get() != nullptr) //如果运行报double free， 这里改成frame2 != nullptr
+		{
+			printf("frame2: ");
+			for (int i = 0; i < 10; i++)
+				printf("%x ", frame2->h_CpuData[i]);
+			printf("\n");
+		}
+		Sleep(1);
+	}
+
+	camera1.stop();
+	camera2.stop();
+
+
+	//decoder();
 	return 0;
 }

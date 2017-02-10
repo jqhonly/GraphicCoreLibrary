@@ -1,247 +1,251 @@
 #include <HCNetSDK.h>
 #include <PlayM4.h>
-
 #include "CameraManagement.h"
-#include "ColorTransform.h"
-
-#include <string>
 #include <unordered_map>
 
-#include <unistd.h>
-using namespace cv;
 using namespace std;
 
-namespace HikSdk {
+namespace GCL {
+	static std::unordered_map<long, long> portMap;
+	static std::unordered_map<long, unique_ptr<CpuBitmap>> matMap;
+	static unique_ptr<CpuBitmap> nullMat;
+	static ColorTransform *ct = new ColorTransform(1280, 720, 0);
 
-#define USECOLOR 1
+	//--------------------------------------------
+	//½âÂë»Øµ÷ ÊÓÆµÎªYUVÊı¾İ(YV12)£¬ÒôÆµÎªPCMÊı¾İ
+	static void CALLBACK DecCBFun(LONG nPort, char * pBuf, LONG nSize, FRAME_INFO * pFrameInfo, void *nUser, void *nReserved2)
+	{
 
-    static std::unordered_map<int, int> portMap;
-    static std::unordered_map<int, unique_ptr<Mat>> matMap;
-    static unique_ptr<cv::Mat> nullMat;
+		long lFrameType = pFrameInfo->nType;
 
+		if (lFrameType == T_YV12)
+		{
+			unsigned char * rgba_data =new unsigned char[pFrameInfo->nWidth *pFrameInfo->nHeight *4*sizeof(unsigned char)];
+			int x = ct->ColorTrans_YV12toARGB32_RetineX(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
+			
 
-    //--------------------------------------------
-    //è§£ç å›è°ƒ è§†é¢‘ä¸ºYUVæ•°æ®(YV12)ï¼ŒéŸ³é¢‘ä¸ºPCMæ•°æ®
-    static void CALLBACK DecCBFun(int nPort,char * pBuf,int nSize,FRAME_INFO * pFrameInfo, int nUser,int nReserved2)
-    {
-
-        int lFrameType = pFrameInfo->nType;
-
-        if(lFrameType == T_YV12)
-        {
-    #if USECOLOR
-            
-            Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC4);
-            
-            int x = YV12toARGB32((unsigned char *)pBuf, pImg->data, pFrameInfo->nWidth, pFrameInfo->nHeight, 0);
-
-    #else
-            Mat* pImg =new Mat(Size(pFrameInfo->nWidth,pFrameInfo->nHeight), CV_8UC1);
-            memcpy(pImg->data,pBuf,pFrameInfo->nWidth*pFrameInfo->nHeight);
-
-    #endif
-            matMap[nUser].reset(pImg);
-        }
-    }
+			auto pImg = new CpuBitmap(rgba_data, pFrameInfo->nWidth, pFrameInfo->nHeight, 4);
+			matMap[reinterpret_cast<long>(nUser)].reset(pImg);
+			delete[] rgba_data;
+		}
+	}
 
 
-    ///å®æ—¶æµå›è°ƒ
-    static void CALLBACK fRealDataCallBack(LONG lRealHandle,DWORD dwDataType,BYTE *pBuffer,DWORD dwBufSize,void *pUser)
-    {
-        DWORD dRet;
-        switch (dwDataType)
-        {
-        case NET_DVR_SYSHEAD:    //ç³»ç»Ÿå¤´
-        {
-            LONG nPort;
-            if (!PlayM4_GetPort(&nPort)) //è·å–æ’­æ”¾åº“æœªä½¿ç”¨çš„é€šé“å·
-            {
-                dRet=PlayM4_GetLastError(nPort);
-                printf("PlayM4_GetPort Failed!:%d\n", dRet);
-                break;
-            }
+	///ÊµÊ±Á÷»Øµ÷
+	static void CALLBACK fRealDataCallBack(LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser)
+	{
+		DWORD dRet;
+		switch (dwDataType)
+		{
+		case NET_DVR_SYSHEAD:    //ÏµÍ³Í·
+		{
+			LONG nPort;
+			if (!PlayM4_GetPort(&nPort)) //»ñÈ¡²¥·Å¿âÎ´Ê¹ÓÃµÄÍ¨µÀºÅ
+			{
+				dRet = PlayM4_GetLastError(nPort);
+				printf("PlayM4_GetPort Failed!:%d\n", dRet);
+				break;
+			}
 
-            portMap[reinterpret_cast<long>(pUser)] = nPort;
+			portMap[reinterpret_cast<long>(pUser)] = nPort;
 
-            if(dwBufSize > 0)
-            {
-                if (!PlayM4_OpenStream(nPort,pBuffer,dwBufSize,2*1024*1024))
-                {
-                    dRet=PlayM4_GetLastError(nPort);
-                    printf("PlayM4_OpenStream Failed!:%d\n", dRet);
-                    break;
-                }
-                //è®¾ç½®è§£ç å›è°ƒå‡½æ•° åªè§£ç ä¸æ˜¾ç¤º
-                if (!PlayM4_SetDecCallBackExMend(nPort, DecCBFun, NULL, 0, reinterpret_cast<long>(pUser)))
-                {
-                    dRet=PlayM4_GetLastError(nPort);
-                    printf("PlayM4_SetDecCallBackExMend Failed!:%d\n", dRet);
-                    break;
-                }
+			if (dwBufSize > 0)
+			{
+				if (!PlayM4_OpenStream(nPort, pBuffer, dwBufSize, 2 * 1024 * 1024))
+				{
+					dRet = PlayM4_GetLastError(nPort);
+					printf("PlayM4_OpenStream Failed!:%d\n", dRet);
+					break;
+				}
+				//ÉèÖÃ½âÂë»Øµ÷º¯Êı Ö»½âÂë²»ÏÔÊ¾
+				if (!PlayM4_SetDecCallBackExMend(nPort, DecCBFun, NULL, 0, pUser))
+				{
+					dRet = PlayM4_GetLastError(nPort);
+					printf("PlayM4_SetDecCallBackExMend Failed!:%d\n", dRet);
+					break;
+				}
 
-                if(!PlayM4_ThrowBFrameNum(nPort, 2))
-                {
-                    dRet=PlayM4_GetLastError(nPort);
-                    printf("PlayM4_ThrowBFrameNum Failed!:%d\n", dRet);
-                    break;
-                }
+				if (!PlayM4_ThrowBFrameNum(nPort, 2))
+				{
+					dRet = PlayM4_GetLastError(nPort);
+					printf("PlayM4_ThrowBFrameNum Failed!:%d\n", dRet);
+					break;
+				}
 
-                //æ‰“å¼€è§†é¢‘è§£ç 
-                if (!PlayM4_Play(nPort, NULL))
-               {
-                  dRet=PlayM4_GetLastError(nPort);
-                  printf("PlayM4_Play Failed!:%d\n", dRet);
-                  break;
-                }
-            }
-            break;
-        }
+				//´ò¿ªÊÓÆµ½âÂë
+				if (!PlayM4_Play(nPort, NULL))
+				{
+					dRet = PlayM4_GetLastError(nPort);
+					printf("PlayM4_Play Failed!:%d\n", dRet);
+					break;
+				}
+			}
+			break;
+		}
 
-        case NET_DVR_STREAMDATA:   //ç æµæ•°æ®
-        {
-            int port = portMap[reinterpret_cast<long>(pUser)];
-            if (dwBufSize > 0 &&  port!= -1)
-            {
-                BOOL inData = PlayM4_InputData(port, pBuffer, dwBufSize);
-                while (!inData)
-                {
-                    sleep(10);
-                    inData = PlayM4_InputData(port, pBuffer, dwBufSize);
-                    printf("PlayM4_InputData failed \n");
-                }
-            }
-            break;
-        }
-        default:
-            break;
-        }
-    }
+		case NET_DVR_STREAMDATA:   //ÂëÁ÷Êı¾İ
+		{
+			long port = portMap[reinterpret_cast<long>(pUser)];
+			if (dwBufSize > 0 && port != -1)
+			{
+				BOOL inData = PlayM4_InputData(port, pBuffer, dwBufSize);
+				while (!inData)
+				{
+					Sleep(10);
+					inData = PlayM4_InputData(port, pBuffer, dwBufSize);
+					printf("PlayM4_InputData failed \n");
+				}
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
 
-    static void CALLBACK g_ExceptionCallBack(DWORD dwType, LONG lUserID, LONG lHandle, void *pUser)
-    {
-        switch(dwType)
-        {
-        case EXCEPTION_RECONNECT:    //é¢„è§ˆæ—¶é‡è¿
-            printf("----------reconnect--------\n");
-            break;
-        default:
-            break;
-        }
-    }
+	static void CALLBACK g_ExceptionCallBack(DWORD dwType, LONG lUserID, LONG lHandle, void *pUser)
+	{
+		switch (dwType)
+		{
+		case EXCEPTION_RECONNECT:    //Ô¤ÀÀÊ±ÖØÁ¬
+			printf("----------reconnect--------\n");
+			break;
+		default:
+			break;
+		}
+	}
 
-    void Camera::play() {
-        if(!PlayFlag) {
-            //---------------------------------------
-            // åˆå§‹åŒ–
-            NET_DVR_Init();
-            //è®¾ç½®è¿æ¥æ—¶é—´ä¸é‡è¿æ—¶é—´
-            NET_DVR_SetConnectTime(2000, 1);
-            NET_DVR_SetReconnect(10000, true);
+	void Camera::play() {
+		if (!PlayFlag) {
+			//---------------------------------------
+			// ³õÊ¼»¯
+			NET_DVR_Init();
+			//ÉèÖÃÁ¬½ÓÊ±¼äÓëÖØÁ¬Ê±¼ä
+			NET_DVR_SetConnectTime(2000, 1);
+			NET_DVR_SetReconnect(10000, true);
 
-            //---------------------------------------
-            // è·å–æ§åˆ¶å°çª—å£å¥æŸ„
-            //HMODULE hKernel32 = GetModuleHandle((LPCWSTR)"kernel32");
-            //GetConsoleWindow = (PROCGETCONSOLEWINDOW)GetProcAddress(hKernel32,"GetConsoleWindow");
+			//---------------------------------------
+			// »ñÈ¡¿ØÖÆÌ¨´°¿Ú¾ä±ú
+			//HMODULE hKernel32 = GetModuleHandle((LPCWSTR)"kernel32");
+			//GetConsoleWindow = (PROCGETCONSOLEWINDOW)GetProcAddress(hKernel32,"GetConsoleWindow");
 
-            //---------------------------------------
-            // æ³¨å†Œè®¾å¤‡
-            NET_DVR_DEVICEINFO_V30 struDeviceInfo;
-            lUserID = NET_DVR_Login_V30((char *)ip.c_str(), port, (char *)account.c_str(), (char *)pwd.c_str(), &struDeviceInfo);
-            if (lUserID < 0)
-            {
-                printf("Login error, %d\n", NET_DVR_GetLastError());
-                NET_DVR_Cleanup();
-                return;
-            }
+			//---------------------------------------
+			// ×¢²áÉè±¸
+			NET_DVR_DEVICEINFO_V30 struDeviceInfo;
+			lUserID = NET_DVR_Login_V30(const_cast<char *>(ip.c_str()), port, const_cast<char *>(account.c_str()), const_cast<char *>(pwd.c_str()), &struDeviceInfo);
+			if (lUserID < 0)
+			{
+				printf("Login error, %d\n", NET_DVR_GetLastError());
+				NET_DVR_Cleanup();
+				return;
+			}
 
-            char *spSerialNumber = new char[SERIALNO_LEN];
-            strcpy(spSerialNumber, (const char *)struDeviceInfo.sSerialNumber);
-            pSerialNumber = static_cast<const char*>(spSerialNumber);
+			char *spSerialNumber = new char[SERIALNO_LEN];
+			strcpy(spSerialNumber, (char *)struDeviceInfo.sSerialNumber);
+			pSerialNumber = static_cast<const char*>(spSerialNumber);
 
-            //---------------------------------------
-            //è®¾ç½®å¼‚å¸¸æ¶ˆæ¯å›è°ƒå‡½æ•°
-            NET_DVR_SetExceptionCallBack_V30(0, NULL, g_ExceptionCallBack, const_cast<char*>(pSerialNumber));
+			//---------------------------------------
+			//ÉèÖÃÒì³£ÏûÏ¢»Øµ÷º¯Êı
+			NET_DVR_SetExceptionCallBack_V30(0, NULL, g_ExceptionCallBack, const_cast<char*>(pSerialNumber));
 
-            NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
-            struPlayInfo.hPlayWnd = NULL;         //éœ€è¦SDKè§£ç æ—¶å¥æŸ„è®¾ä¸ºæœ‰æ•ˆå€¼ï¼Œä»…å–æµä¸è§£ç æ—¶å¯è®¾ä¸ºç©º
-            struPlayInfo.lChannel = 1;       //é¢„è§ˆé€šé“å·
-            struPlayInfo.dwStreamType = 0;       //0-ä¸»ç æµï¼Œ1-å­ç æµï¼Œ2-ç æµ3ï¼Œ3-ç æµ4ï¼Œä»¥æ­¤ç±»æ¨
-            struPlayInfo.dwLinkMode = 0;       //0- TCPæ–¹å¼ï¼Œ1- UDPæ–¹å¼ï¼Œ2- å¤šæ’­æ–¹å¼ï¼Œ3- RTPæ–¹å¼ï¼Œ4-RTP/RTSPï¼Œ5-RSTP/HTTP
+			NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
+			struPlayInfo.hPlayWnd = NULL;         //ĞèÒªSDK½âÂëÊ±¾ä±úÉèÎªÓĞĞ§Öµ£¬½öÈ¡Á÷²»½âÂëÊ±¿ÉÉèÎª¿Õ
+			struPlayInfo.lChannel = 1;       //Ô¤ÀÀÍ¨µÀºÅ
+			struPlayInfo.dwStreamType = 0;       //0-Ö÷ÂëÁ÷£¬1-×ÓÂëÁ÷£¬2-ÂëÁ÷3£¬3-ÂëÁ÷4£¬ÒÔ´ËÀàÍÆ
+			struPlayInfo.dwLinkMode = 0;       //0- TCP·½Ê½£¬1- UDP·½Ê½£¬2- ¶à²¥·½Ê½£¬3- RTP·½Ê½£¬4-RTP/RTSP£¬5-RSTP/HTTP
 
-            lRealPlayHandle = NET_DVR_RealPlay_V40(lUserID, &struPlayInfo, fRealDataCallBack, reinterpret_cast<void*>(lUserID));
 
-            if (lRealPlayHandle<0)
-            {
-                NET_DVR_Logout(lUserID);
-                NET_DVR_Cleanup();
-                printf("NET_DVR_RealPlay_V30 failed! Error number: %d\n", NET_DVR_GetLastError());
-                return;
-            }
+			lRealPlayHandle = NET_DVR_RealPlay_V40(lUserID, &struPlayInfo, fRealDataCallBack, reinterpret_cast<void*>(lUserID));
 
-            matMap.insert(std::unordered_map<int, unique_ptr<Mat>>::value_type(lUserID, unique_ptr<Mat>()));
-            PlayFlag = true;
-        }
-    }
+			if (lRealPlayHandle<0)
+			{
+				NET_DVR_Logout(lUserID);
+				NET_DVR_Cleanup();
+				printf("NET_DVR_RealPlay_V30 failed! Error number: %d\n", NET_DVR_GetLastError());
+				return;
+			}
 
-    void Camera::stop()
-    {
-        //--------------------------------------
-        //å…³é—­é¢„è§ˆ
-        if(lRealPlayHandle < 0)
-            return;
 
-        if(!NET_DVR_StopRealPlay(lRealPlayHandle))
-        {
-            printf("NET_DVR_StopRealPlay error! Error number: %d\n",NET_DVR_GetLastError());
-            return;
-        }
+			//matMap.insert(std::unordered_map<int, unique_ptr<CpuBitmap>>::value_type(lUserID, unique_ptr<CpuBitmap>()));
+			matMap[lUserID] = unique_ptr<CpuBitmap>(nullptr);
+			PlayFlag = true;
+		}
+	}
 
-        lRealPlayHandle = -1;
-        PlayFlag = false;
+	void Camera::stop()
+	{
+		//--------------------------------------
+		//¹Ø±ÕÔ¤ÀÀ
+		if (lRealPlayHandle < 0)
+			return;
 
-        //æ³¨é”€ç”¨æˆ·
-        NET_DVR_Logout(lUserID);
+		if (!NET_DVR_StopRealPlay(lRealPlayHandle))
+		{
+			printf("NET_DVR_StopRealPlay error! Error number: %d\n", NET_DVR_GetLastError());
+			return;
+		}
 
-        portMap.erase(lUserID);
-        matMap[lUserID].reset(nullptr);
-        matMap.erase(lUserID);
+		lRealPlayHandle = -1;
+		PlayFlag = false;
 
-        lUserID = -1;
+		//×¢ÏúÓÃ»§
+		NET_DVR_Logout(lUserID);
 
-        NET_DVR_Cleanup();
-    }
+		portMap.erase(lUserID);
+		matMap[lUserID].reset(nullptr);
+		matMap.erase(lUserID);
 
-    unique_ptr<cv::Mat>&& Camera::getFrame() const {
-        std::unordered_map<int, unique_ptr<cv::Mat>>::iterator ite = matMap.find(lUserID);
-        if(PlayFlag  && ite->second != nullptr ) {
-            return std::move(ite->second);
-        }
-        else {
-            return std::move(nullMat);
-        }
-    }
+		lUserID = -1;
 
-    const char *Camera::getSerialNumber() const {
-        return pSerialNumber;
-    }
+		NET_DVR_Cleanup();
+	}
 
-    int Camera::getUserId() const {
-        return lUserID;
-    }
+	unique_ptr<CpuBitmap>&& Camera::getFrame() const {
+		std::unordered_map<long, unique_ptr<CpuBitmap>>::iterator ite = matMap.find(lUserID);
+		if (PlayFlag  && ite->second != nullptr) {
+			return std::move(ite->second);
+		}
+		else {
+			return std::move(nullMat);
+		}
+	}
 
-    Camera::Camera(const char *ip, int port, const char *account, const char *pwd):PlayFlag(false),
-                                                                         pSerialNumber(NULL),
-                                                                         lRealPlayHandle(-1),
-                                                                         lUserID(-1) {
-        this->ip = ip;
-        this->port = port;
-        this->account = account;
-        this->pwd = pwd;
-    }
+	const char *Camera::getSerialNumber() const {
+		return pSerialNumber;
+	}
 
-    Camera::~Camera() {
-        stop();
-        delete[] pSerialNumber;
-    }
+	long Camera::getUserId() const {
+		return lUserID;
+	}
+
+	/*Camera::Camera(const char *ip, long port, const char *account, const char *pwd) :
+	lRealPlayHandle(-1),
+	lUserID(-1),
+	pSerialNumber(nullptr),
+	PlayFlag(false) {
+	this->ip = ip;
+	this->port = port;
+	this->account = account;
+	this->pwd = pwd;
+	}*/
+
+	Camera::Camera(const char* ip, WORD port, const char* account, const char* pwd) :
+		lRealPlayHandle(-1),
+		lUserID(-1),
+		pSerialNumber(nullptr),
+		PlayFlag(false)
+	{
+		this->ip = ip;
+		this->port = port;
+		this->account = account;
+		this->pwd = pwd;
+		
+	}
+
+
+	Camera::~Camera() {
+		stop();
+		delete[] pSerialNumber;
+	}
 
 }
