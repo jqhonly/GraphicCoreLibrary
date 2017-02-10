@@ -8,8 +8,11 @@ namespace GCL
 		width = _width;
 		height = _height;
 		depth = _depth;
+		h_CpuData = new unsigned char[width*height*depth * sizeof(unsigned char)];
+		//h_float_CpuData = new float[width*height*depth * sizeof(float)];
 		memcpy(h_CpuData, input, width*height*depth * sizeof(unsigned char));
 		h_float_CpuData = (float*)malloc(width*height*depth * sizeof(float));
+		
 	}
 
 	CpuBitmap::~CpuBitmap()

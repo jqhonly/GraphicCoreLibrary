@@ -1,8 +1,12 @@
 #pragma once
+#ifndef COLORTRANSFORM_H
+#define COLORTRANSFORM_H
+
 #include <stdio.h>
-#include <helper_math.h>
+
 #include <helper_cuda.h>
 #include <helper_timer.h>
+#include <helper_math.h>
 
 extern "C"
 int YV12toARGB32(unsigned char* d_YV12, unsigned char* d_RGBA32, int width, int height, int deviceid);
@@ -60,3 +64,5 @@ namespace GCL
 		int GetCurrentDeviceID();
 	};
 }
+
+#endif // COLORTRANSFORM_H

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef GPUBITMAP_H
+#define GPUBITMAP_H
+
 #include "CpuBitmap.h"
 
 namespace GCL
@@ -20,3 +23,5 @@ namespace GCL
 
 	};
 }
+
+#endif // GPUBITMAP_H
