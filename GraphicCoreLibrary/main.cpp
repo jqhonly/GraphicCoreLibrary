@@ -98,13 +98,16 @@ int main()
 	}
 	*/
 
+	/*GpuManagement gm = GpuManagement();
+	int xx = gm.DeviceCount;
+	std::string aaa= gm.props[0].name;*/
 	GCL::Camera camera1("192.168.0.68", 8000, "admin", "hk123456");
 	GCL::Camera camera2("192.168.0.67", 8000, "admin", "hk123456");
 
 	camera1.play();
 	camera2.play();
 
-	for(int i = 0; i < 10000; i++)
+	for(int i = 0; i < 100; i++)
 	{
 		auto frame1 = camera1.getFrame();
 		

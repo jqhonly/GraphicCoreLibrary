@@ -1,6 +1,7 @@
 #include <HCNetSDK.h>
 #include <PlayM4.h>
 #include "CameraManagement.h"
+#include "GpuManagement.h"
 #include <unordered_map>
 
 using namespace std;
@@ -8,8 +9,9 @@ using namespace std;
 namespace GCL {
 	static std::unordered_map<long, long> portMap;
 	static std::unordered_map<long, unique_ptr<CpuBitmap>> matMap;
+	static std::unordered_map<long, unique_ptr<ColorTransform>> ctMap;
 	static unique_ptr<CpuBitmap> nullMat;
-	static ColorTransform *ct = new ColorTransform(1280, 720, 0);
+	static GpuManagement *gm = new GpuManagement();
 
 	//--------------------------------------------
 	//解码回调 视频为YUV数据(YV12)，音频为PCM数据
@@ -21,9 +23,7 @@ namespace GCL {
 		if (lFrameType == T_YV12)
 		{
 			unsigned char * rgba_data =new unsigned char[pFrameInfo->nWidth *pFrameInfo->nHeight *4*sizeof(unsigned char)];
-			int x = ct->ColorTrans_YV12toARGB32_RetineX(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
-			
-
+			int x = ctMap[reinterpret_cast<long>(nUser)]->ColorTrans_YV12toARGB32(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
 			auto pImg = new CpuBitmap(rgba_data, pFrameInfo->nWidth, pFrameInfo->nHeight, 4);
 			matMap[reinterpret_cast<long>(nUser)].reset(pImg);
 			delete[] rgba_data;
@@ -154,6 +154,17 @@ namespace GCL {
 			struPlayInfo.dwStreamType = 0;       //0-主码流，1-子码流，2-码流3，3-码流4，以此类推
 			struPlayInfo.dwLinkMode = 0;       //0- TCP方式，1- UDP方式，2- 多播方式，3- RTP方式，4-RTP/RTSP，5-RSTP/HTTP
 
+			if (gm->DeviceCount<=0)
+			{
+				//CPU Device Automatic Allocation
+				ctMap[lUserID] = unique_ptr<ColorTransform>(new ColorTransform(1280, 720, -1));
+			}
+			else
+			{
+				//GPU Device Automatic Allocation
+				ctMap[lUserID] = unique_ptr<ColorTransform>(new ColorTransform(1280, 720, lUserID%gm->DeviceCount));
+			}
+			
 
 			lRealPlayHandle = NET_DVR_RealPlay_V40(lUserID, &struPlayInfo, fRealDataCallBack, reinterpret_cast<void*>(lUserID));
 
@@ -195,6 +206,9 @@ namespace GCL {
 		matMap[lUserID].reset(nullptr);
 		matMap.erase(lUserID);
 
+		/*ctMap[lUserID].reset(nullptr);
+		ctMap.erase(lUserID);*/
+
 		lUserID = -1;
 
 		NET_DVR_Cleanup();
@@ -202,7 +216,9 @@ namespace GCL {
 
 	unique_ptr<CpuBitmap>&& Camera::getFrame() const {
 		std::unordered_map<long, unique_ptr<CpuBitmap>>::iterator ite = matMap.find(lUserID);
-		if (PlayFlag  && ite->second != nullptr) {
+		if (PlayFlag) {
+			while (ite->second == nullptr)
+				Sleep(1);
 			return std::move(ite->second);
 		}
 		else {
@@ -218,16 +234,6 @@ namespace GCL {
 		return lUserID;
 	}
 
-	/*Camera::Camera(const char *ip, long port, const char *account, const char *pwd) :
-	lRealPlayHandle(-1),
-	lUserID(-1),
-	pSerialNumber(nullptr),
-	PlayFlag(false) {
-	this->ip = ip;
-	this->port = port;
-	this->account = account;
-	this->pwd = pwd;
-	}*/
 
 	Camera::Camera(const char* ip, WORD port, const char* account, const char* pwd) :
 		lRealPlayHandle(-1),
