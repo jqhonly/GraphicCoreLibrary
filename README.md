@@ -6,7 +6,7 @@ GraphicCoreLibrary, a.k.a **GCL**, is a small graphic and image processing libra
 - MSVC v140
 - CUDA 8.0
 
-All the environment and some local dependencies relied of projects in this repository which is able to find in [here](https://github.com/CompileSense/caffe_windows_binary). Please check before you start to config or use.
+All the environment and some CUDA local dependencies relied of projects in this repository which is able to find in [here](https://github.com/CompileSense/caffe_windows_binary). Please check before you start to config or use.
 
 ##GraphicCoreLibrary
 This project is the core engine of **GCL** which will be compiled into static library. The core part is written by CUDA to support different real-time image/ graphic processing tasks.
@@ -20,8 +20,7 @@ This project is the C++ interface of GraphicCoreLibrary which is meanly written 
 ##CSharpTest
 This is a C# test project of GraphicCoreLibrary which is written by C#. In order to compile this project, you need .Net Framework 4.5.2. 
 
-##UpdateLog
-- 2017-01-14 01:29:39 Init  --inlmouse
 
 ##Contributors
 - inlmosuse
+- Yifu Zhang

@@ -4,9 +4,12 @@
 
 #include <stdio.h>
 
+
+
 #include <helper_cuda.h>
 #include <helper_timer.h>
 #include <helper_math.h>
+#include "cublas_v2.h"
 
 extern "C"
 int YV12toARGB32(unsigned char* d_YV12, unsigned char* d_RGBA32, int width, int height, int deviceid);
@@ -45,6 +48,9 @@ namespace GCL
 		float min1 = NULL;
 		float min2 = NULL;
 		float min3 = NULL;
+		//*************
+		cublasHandle_t handle;
+		cublasStatus_t stat;
 
 		void GetManMinValue(float * logAveImage);
 		int ColorTrans_YV12toARGB32_CPU(unsigned char *yv12, unsigned char *rgba32);
