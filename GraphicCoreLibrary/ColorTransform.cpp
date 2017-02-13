@@ -1,7 +1,10 @@
 #include "ColorTransform.h"
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
 #include <windows.h>  
 
 #define CLIP(value) (unsigned char)(((value)>0xFF)?0xff:(((value)<0)?0:(value)))
+//#define CUBLASAPI
 
 extern "C"
 int gaussianFilterRGBA(uint *d_src, uint *d_dest, uint *d_temp, int width, int height, float sigma, int order, int nthreads, int deviceid);
@@ -41,7 +44,7 @@ namespace GCL
 
 			h_logave = (float*)malloc(sizeof(float)* size * 3);
 		}
-		
+		//stat = cublasCreate(&handle);
 	}
 
 	ColorTransform::~ColorTransform()

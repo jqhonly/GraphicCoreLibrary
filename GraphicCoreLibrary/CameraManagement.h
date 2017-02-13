@@ -21,18 +21,20 @@ namespace GCL {
     public:
         explicit Camera(const char *ip, WORD port, const char *account, const char *pwd);
         ~Camera();
-        void play();
-        void stop();
+		bool login();
+        bool play(HWND display_hwnd= nullptr);
+		bool stop();
+		bool logout();
         std::unique_ptr<CpuBitmap>&& getFrame() const;
-        const char *getSerialNumber() const;
+		std::string getSerialNumber() const;
         long getUserId() const;
-        bool isPlay();
+        bool isPlaying();
 
     private:
         long lRealPlayHandle;
 		long lUserID;
 
-        const char *pSerialNumber;
+		std::string pSerialNumber;
 
         std::string ip;
         WORD port;

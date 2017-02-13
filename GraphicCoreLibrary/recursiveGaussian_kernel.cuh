@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _RECURSIVEGAUSSIAN_KERNEL_CU_
 #define _RECURSIVEGAUSSIAN_KERNEL_CU_
 
