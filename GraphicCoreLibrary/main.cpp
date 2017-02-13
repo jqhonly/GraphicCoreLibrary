@@ -1,14 +1,11 @@
-//#include <helper_math.h>
-//#include <helper_cuda.h>
-//#include <helper_timer.h>
 #include "ColorTransform.h"
 #include "CameraManagement.h"
-
+#include "SpatialTransform.h"
 #include <windows.h>  
 #include "lodepng.h"
+#include <thread> 
 
 using namespace GCL;
-//using namespace Camera;
 
 unsigned char* LoadPng(std::string filepath, unsigned int &sizeX, unsigned int &sizeY)
 {
@@ -81,39 +78,52 @@ void decoder()
 	}
 }
 
+void Execution(int id, Camera& camera)
+{
+	LARGE_INTEGER Freq;
+	LARGE_INTEGER start;
+	LARGE_INTEGER end;
+	QueryPerformanceFrequency(&Freq);
+	LONGLONG temp = 0;
+	for (int i = 0; i < 10; i++)
+	{
+		QueryPerformanceCounter(&start);
+		auto frame1 = camera.getFrame();
+		QueryPerformanceCounter(&end);
+		printf("camera%d execution time: %lld\n", id, (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
+		temp += (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart;
+	}
+	printf("Average execution time if camera%d: %lld\n", id , temp / 50);
+	printf("\n");
+}
+
 int main()
 {
-	/*HikVision hik = HikVision();
-	hik.InitCamera();
-	hik.Login("192.168.0.68", 8000, "admin", "hk123456");
-	hik.Activte();*/
+	
 
-	/*Camera::InitCamera();
-	Camera::Login("192.168.0.66", 8000, "admin", "hk123456");
-	Camera::Activte();
-
-	while (true)
-	{
-		Sleep(10);
-	}
-	*/
-
-	/*GpuManagement gm = GpuManagement();
-	int xx = gm.DeviceCount;
-	std::string aaa= gm.props[0].name;*/
-	GCL::Camera camera1("192.168.0.68", 8000, "admin", "hk123456");
-	GCL::Camera camera2("192.168.0.67", 8000, "admin", "hk123456");
+	Camera camera1("192.168.0.68", 8000, "admin", "hk123456");
+	Camera camera2("192.168.0.67", 8000, "admin", "hk123456");
+	camera1.login();
+	camera2.login();
 
 	camera1.play();
 	camera2.play();
 
-	for(int i = 0; i < 100; i++)
+	/*std::thread t1(Execution, 1, camera1);
+	std::thread t2(Execution, 2, camera2);
+	
+	t1.join();
+	t2.join();*/
+	for(int i = 0; i < 50; i++)
 	{
+		
 		auto frame1 = camera1.getFrame();
 		
 		if(frame1.get() != nullptr)  //如果运行报double free， 这里改成frame1 != nullptr
 		{
-			//SavePng("C:\\Research\\GraphicCoreLibrary\\x64\\Debug\\test.png", frame1->h_CpuData, 1280, 720);
+			/*unsigned char * temp = new unsigned char[640 * 360 * 4 * sizeof(unsigned char)];
+			int xx = SpatialTransform::Resize(frame1->h_CpuData, 1280, 720, temp, 640, 360, 0);
+			SavePng("C:\\Research\\GraphicCoreLibrary\\x64\\Debug\\test.png", temp, 640, 360);*/
 			printf("frame1: ");
 			for(int i = 0; i < 10; i++)
 				printf("%x ", frame1->h_CpuData[i]);
@@ -127,12 +137,15 @@ int main()
 				printf("%x ", frame2->h_CpuData[i]);
 			printf("\n");
 		}
-		Sleep(1);
+		printf("\n");
+		//Sleep(1);
 	}
-
+	
 	camera1.stop();
 	camera2.stop();
 
+	camera1.logout();
+	camera2.logout();
 
 	//decoder();
 	return 0;

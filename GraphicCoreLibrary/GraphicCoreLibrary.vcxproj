@@ -170,8 +170,11 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClCompile Include="GpuManagement.cpp" />
     <ClCompile Include="lodepng.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SpatialTransform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SpatialTransform.cuh" />
+    <ClInclude Include="SpatialTransform.h" />
     <None Include="recursiveGaussian_kernel.cuh" />
     <None Include="ColorTransform.cuh" />
     <ClInclude Include="CameraManagement.h" />
@@ -184,6 +187,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   <ItemGroup>
     <CudaCompile Include="ColorTransform.cu" />
     <CudaCompile Include="recursiveGaussian_cuda.cu" />
+    <CudaCompile Include="SpatialTransform.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
