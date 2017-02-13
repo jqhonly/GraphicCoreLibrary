@@ -167,6 +167,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClCompile Include="ColorTransform.cpp" />
     <ClCompile Include="CpuBitmap.cpp" />
     <ClCompile Include="GpuBitmap.cpp" />
+    <ClCompile Include="GpuManagement.cpp" />
     <ClCompile Include="lodepng.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -177,6 +178,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="ColorTransform.h" />
     <ClInclude Include="CpuBitmap.h" />
     <ClInclude Include="GpuBitmap.h" />
+    <ClInclude Include="GpuManagement.h" />
     <ClInclude Include="lodepng.h" />
   </ItemGroup>
   <ItemGroup>
