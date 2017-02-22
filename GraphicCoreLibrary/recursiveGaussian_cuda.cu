@@ -170,7 +170,7 @@ int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, floa
 }
 
 extern "C"
-int h_GetManMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid)
+int h_GetMaxMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid)
 {
 	cublasHandle_t handle;
 	cublasStatus_t stat;

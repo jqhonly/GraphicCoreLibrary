@@ -19,7 +19,7 @@ extern "C"
 int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height, int deviceid);
 
 extern "C"
-int h_GetManMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid);
+int h_GetMaxMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid);
 
 namespace GCL
 {
@@ -69,7 +69,7 @@ namespace GCL
 		//stat = cublasDestroy(handle);
 	}
 
-	void ColorTransform::GetManMinValue(float* h_logave)
+	void ColorTransform::GetMaxMinValue(float* h_logave)
 	{
 		float mean1 = 0, var1 = 0;
 		float mean2 = 0, var2 = 0;
@@ -226,11 +226,11 @@ namespace GCL
 	{
 		if (deviceid >= 0)//GPU
 		{
-			LARGE_INTEGER Freq;
+			/*LARGE_INTEGER Freq;
 			LARGE_INTEGER start;
 			LARGE_INTEGER end;
 			QueryPerformanceFrequency(&Freq);
-			QueryPerformanceCounter(&start);
+			QueryPerformanceCounter(&start);*/
 			int result;
 			cudaMemcpy(d_yv12, h_YV12, size * 3 / 2 * sizeof(unsigned char), cudaMemcpyHostToDevice);
 			result = YV12toARGB32(d_yv12, d_rgba32, width, height, deviceid);
@@ -239,13 +239,13 @@ namespace GCL
 			result = gaussianFilterRGBA(d_img, d_result2, d_temp2, width, height, sigma2, order, nthreads, deviceid);
 			result = gaussianFilterRGBA(d_img, d_result3, d_temp3, width, height, sigma3, order, nthreads, deviceid);
 			result = logAve(d_logave, d_img, d_result1, d_result2, d_result3, width, height, deviceid);
-			/*cudaMemcpy(h_logave, d_logave, size * 3 * sizeof(float), cudaMemcpyDeviceToHost);
-			GetManMinValue(h_logave);*/
-			result = h_GetManMinValue(d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);
+			cudaMemcpy(h_logave, d_logave, size * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+			GetMaxMinValue(h_logave);//CPU implementation
+			//result = h_GetMaxMinValue(d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);//GPU implementation
 			result = h_Rescale(d_rgba32, d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);
 			cudaMemcpy(h_RGBA32, d_rgba32, width * height * 4 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-			QueryPerformanceCounter(&end);
-			printf("execution time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
+			/*QueryPerformanceCounter(&end);
+			printf("execution time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);*/
 			return result;
 		}
 		else
@@ -267,7 +267,7 @@ namespace GCL
 			result = gaussianFilterRGBA(d_img, d_result3, d_temp3, width, height, sigma3, order, nthreads, deviceid);
 			result = logAve(d_logave, d_img, d_result1, d_result2, d_result3, width, height, deviceid);
 			cudaMemcpy(h_logave, d_logave, size * 3 * sizeof(float), cudaMemcpyDeviceToHost);//Adaptive MaxMin value to host to avoid cross thread error
-			GetManMinValue(h_logave);//Not nessessary for every time
+			GetMaxMinValue(h_logave);//Not nessessary for every time
 			result = h_Rescale(d_rgba32, d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);
 			cudaMemcpy(h_RGBA32, d_rgba32, size * 4 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 			return result;
