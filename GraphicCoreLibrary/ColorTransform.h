@@ -49,10 +49,10 @@ namespace GCL
 		float min2 = NULL;
 		float min3 = NULL;
 		//*************
-		cublasHandle_t handle;
-		cublasStatus_t stat;
+		/*cublasHandle_t handle;
+		cublasStatus_t stat;*/
 
-		void GetManMinValue(float * logAveImage);
+		void GetMaxMinValue(float * logAveImage);
 		int ColorTrans_YV12toARGB32_CPU(unsigned char *yv12, unsigned char *rgba32);
 	public:
 		ColorTransform(int _width, int _height, int _deviceid);

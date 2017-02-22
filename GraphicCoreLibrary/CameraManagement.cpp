@@ -29,7 +29,7 @@ namespace GCL {
 		if (lFrameType == T_YV12)
 		{
 			unsigned char * rgba_data =new unsigned char[pFrameInfo->nWidth *pFrameInfo->nHeight *4*sizeof(unsigned char)];
-			int x = ctMap[reinterpret_cast<long>(nUser)]->ColorTrans_YV12toARGB32(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
+			int x = ctMap[reinterpret_cast<long>(nUser)]->ColorTrans_YV12toARGB32_RetineX(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
 			auto pImg = new CpuBitmap(rgba_data, pFrameInfo->nWidth, pFrameInfo->nHeight, 4);
 			matMap[reinterpret_cast<long>(nUser)].reset(pImg);
 			delete[] rgba_data;
