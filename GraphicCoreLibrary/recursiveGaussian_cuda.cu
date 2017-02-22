@@ -5,6 +5,7 @@
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 #include <helper_math.h>
+#include "cublas_v2.h"
 
 #include "recursiveGaussian_kernel.cuh"
 
@@ -164,6 +165,74 @@ int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, floa
 	const dim3 blockSize(24, 24, 1);
 	const dim3 gridSize((Width / 16), (Height / 16), 1);
 	Rescale << < gridSize, blockSize >> > (reScaledImage, logAveImage, max1, min1, max2, min2, max3, min3, Width, Height);
+	cudaStatus = cudaGetLastError();
+	return cudaStatus;
+}
+
+extern "C"
+int h_GetManMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid)
+{
+	cublasHandle_t handle;
+	cublasStatus_t stat;
+	cudaError_t cudaStatus;
+	stat = cublasCreate(&handle);
+
+	cudaStatus = cudaSetDevice(deviceid);
+	if (cudaStatus != cudaSuccess)
+		return cudaStatus;
+	const dim3 blockSize(24, 24, 1);
+	const dim3 gridSize((Width / 16), (Height / 16), 1);
+
+	float* channel1 = nullptr;
+	float* channel2 = nullptr;
+	float* channel3 = nullptr;
+	float* one_const = nullptr;
+	cudaMalloc((void **)&channel1, sizeof(float)* (Width * Height + 1));
+	cudaMalloc((void **)&channel2, sizeof(float)* (Width * Height + 1));
+	cudaMalloc((void **)&channel3, sizeof(float)* (Width * Height + 1));
+	cudaMalloc((void **)&one_const, sizeof(float)* (Width * Height + 1));
+	float sum1;
+	float sum2;
+	float sum3;
+	SlicetoBLAS << < gridSize, blockSize >> > (d_logave, channel1, channel2, channel3, one_const, Width, Height);
+
+	cublasSdot(handle, Width*Height, channel1, 1, one_const, 1, &sum1);
+	cublasSdot(handle, Width*Height, channel2, 1, one_const, 1, &sum2);
+	cublasSdot(handle, Width*Height, channel3, 1, one_const, 1, &sum3);
+
+	float mean1 = sum1 / (Width * Height);
+	float mean2 = sum2 / (Width * Height);
+	float mean3 = sum3 / (Width * Height);
+
+	PrepareVal << < gridSize, blockSize >> > (channel1, mean1, Width, Height);
+	PrepareVal << < gridSize, blockSize >> > (channel2, mean2, Width, Height);
+	PrepareVal << < gridSize, blockSize >> > (channel3, mean3, Width, Height);
+
+	float var1;
+	float var2;
+	float var3;
+
+	cublasSdot(handle, Width*Height, channel1, 1, channel1, 1, &var1);
+	cublasSdot(handle, Width*Height, channel2, 1, channel2, 1, &var2);
+	cublasSdot(handle, Width*Height, channel3, 1, channel3, 1, &var3);
+
+	var1 = sqrtf(var1 / (Width * Height - 1));
+	var2 = sqrtf(var2 / (Width * Height - 1));
+	var3 = sqrtf(var3 / (Width * Height - 1));
+
+	max1 = mean1 + 2 * var1;
+	max2 = mean2 + 2 * var2;
+	max3 = mean3 + 2 * var3;
+	min1 = mean1 - 2 * var1;
+	min2 = mean2 - 2 * var2;
+	min3 = mean3 - 2 * var3;
+
+	cudaFree(channel1);
+	cudaFree(channel2);
+	cudaFree(channel3);
+	cudaFree(one_const);
+	stat = cublasDestroy(handle);
+
 	cudaStatus = cudaGetLastError();
 	return cudaStatus;
 }

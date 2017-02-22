@@ -22,5 +22,5 @@ This is a C# test project of GraphicCoreLibrary which is written by C#. In order
 
 
 ##Contributors
-- inlmosuse
+- inlmouse
 - Yifu Zhang

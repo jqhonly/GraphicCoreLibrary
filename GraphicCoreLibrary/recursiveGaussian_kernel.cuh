@@ -7,6 +7,7 @@
 #include <string.h>
 #include <helper_cuda.h>
 #include <helper_math.h>
+#include "cublas_v2.h"
 
 #define BLOCK_DIM 16
 #define CLAMP_TO_EDGE 1
@@ -116,6 +117,26 @@ __global__ void LogAve(float* logAveImage, uint* rgbaImage, uint* BlurImage1, ui
 		(float)(unsigned char(BlurImage2[(pos_x + pos_y * Width)] >> 8) & 0xff), (float)(unsigned char(BlurImage3[(pos_x + pos_y * Width)] >> 8) & 0xff));
 }
 
+__global__ void SlicetoBLAS(float* d_logave, float* channel1, float* channel2, float* channel3, float* one_const, int Width, int Height)
+{
+	int pos_x = (blockIdx.x * blockDim.x) + threadIdx.x;
+	int pos_y = (blockIdx.y * blockDim.y) + threadIdx.y;
+	if (pos_x >= Width || pos_y >= Height)
+		return;
+	channel1[(pos_x + pos_y * Width) * 1 + 1] = d_logave[(pos_x + pos_y * Width) * 3 + 0];
+	channel2[(pos_x + pos_y * Width) * 1 + 1] = d_logave[(pos_x + pos_y * Width) * 3 + 1];
+	channel3[(pos_x + pos_y * Width) * 1 + 1] = d_logave[(pos_x + pos_y * Width) * 3 + 2];
+	one_const[(pos_x + pos_y * Width) * 1 + 1] = 1.0f;
+}
+
+__global__ void PrepareVal(float* channel, float mean, int Width, int Height)
+{
+	int pos_x = (blockIdx.x * blockDim.x) + threadIdx.x;
+	int pos_y = (blockIdx.y * blockDim.y) + threadIdx.y;
+	if (pos_x >= Width || pos_y >= Height)
+		return;
+	channel[(pos_x + pos_y * Width) * 1 + 1] -= mean;
+}
 
 /*
 simple 1st order recursive filter

@@ -18,6 +18,9 @@ int logAve(float* logAveImage, uint* rgbaImage, uint* BlurImage1, uint* BlurImag
 extern "C"
 int h_Rescale(unsigned char* reScaledImage, float* logAveImage, float max1, float min1, float max2, float min2, float max3, float min3, int Width, int Height, int deviceid);
 
+extern "C"
+int h_GetManMinValue(float* d_logave, float &max1, float &min1, float &max2, float &min2, float &max3, float &min3, int Width, int Height, int deviceid);
+
 namespace GCL
 {
 	ColorTransform::ColorTransform(int _width, int _height, int _deviceid)
@@ -51,7 +54,7 @@ namespace GCL
 	{
 		cudaFree(d_yv12);
 		cudaFree(d_rgba32);
-		cudaFree(d_o_rgba32);
+		cudaFree(d_o_rgba32);//Detete before release
 		cudaFree(d_img);
 		cudaFree(d_temp1);
 		cudaFree(d_temp2);
@@ -62,6 +65,8 @@ namespace GCL
 		cudaFree(d_logave);
 
 		delete[] h_logave;//delete temp host data
+
+		//stat = cublasDestroy(handle);
 	}
 
 	void ColorTransform::GetManMinValue(float* h_logave)
@@ -221,6 +226,11 @@ namespace GCL
 	{
 		if (deviceid >= 0)//GPU
 		{
+			LARGE_INTEGER Freq;
+			LARGE_INTEGER start;
+			LARGE_INTEGER end;
+			QueryPerformanceFrequency(&Freq);
+			QueryPerformanceCounter(&start);
 			int result;
 			cudaMemcpy(d_yv12, h_YV12, size * 3 / 2 * sizeof(unsigned char), cudaMemcpyHostToDevice);
 			result = YV12toARGB32(d_yv12, d_rgba32, width, height, deviceid);
@@ -229,10 +239,13 @@ namespace GCL
 			result = gaussianFilterRGBA(d_img, d_result2, d_temp2, width, height, sigma2, order, nthreads, deviceid);
 			result = gaussianFilterRGBA(d_img, d_result3, d_temp3, width, height, sigma3, order, nthreads, deviceid);
 			result = logAve(d_logave, d_img, d_result1, d_result2, d_result3, width, height, deviceid);
-			cudaMemcpy(h_logave, d_logave, size * 3 * sizeof(float), cudaMemcpyDeviceToHost);
-			GetManMinValue(h_logave);
+			/*cudaMemcpy(h_logave, d_logave, size * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+			GetManMinValue(h_logave);*/
+			result = h_GetManMinValue(d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);
 			result = h_Rescale(d_rgba32, d_logave, max1, min1, max2, min2, max3, min3, width, height, deviceid);
 			cudaMemcpy(h_RGBA32, d_rgba32, width * height * 4 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+			QueryPerformanceCounter(&end);
+			printf("execution time: %lld\n", (end.QuadPart - start.QuadPart) * 1000 / Freq.QuadPart);
 			return result;
 		}
 		else

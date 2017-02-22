@@ -114,7 +114,7 @@ int main()
 	
 	t1.join();
 	t2.join();*/
-	for(int i = 0; i < 50; i++)
+	for(int i = 0; i < 5000; i++)
 	{
 		
 		auto frame1 = camera1.getFrame();
