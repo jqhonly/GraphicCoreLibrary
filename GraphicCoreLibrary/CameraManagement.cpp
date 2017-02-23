@@ -7,6 +7,7 @@ Copyright (c) 2014-2017 CompileSense& Glassix
 #include <HCNetSDK.h>
 #include <PlayM4.h>
 #include "CameraManagement.h"
+#include "SpatialTransform.h"
 #include "GpuManagement.h"
 #include <unordered_map>
 
@@ -29,10 +30,13 @@ namespace GCL {
 		if (lFrameType == T_YV12)
 		{
 			unsigned char * rgba_data =new unsigned char[pFrameInfo->nWidth *pFrameInfo->nHeight *4*sizeof(unsigned char)];
-			int x = ctMap[reinterpret_cast<long>(nUser)]->ColorTrans_YV12toARGB32_RetineX(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
-			auto pImg = new CpuBitmap(rgba_data, pFrameInfo->nWidth, pFrameInfo->nHeight, 4);
+			int x = ctMap[reinterpret_cast<long>(nUser)]->ColorTrans_YV12toARGB32(reinterpret_cast<unsigned char *>(pBuf), rgba_data);
+			unsigned char * resized_data = new unsigned char[640 * 360 * 4 * sizeof(unsigned char)];
+			x = SpatialTransform::Resize(rgba_data, pFrameInfo->nWidth, pFrameInfo->nHeight, resized_data, 640, 360, reinterpret_cast<long>(nUser) %gm->DeviceCount);
+			auto pImg = new CpuBitmap(resized_data, 640, 360, 4);
 			matMap[reinterpret_cast<long>(nUser)].reset(pImg);
 			delete[] rgba_data;
+			delete[] resized_data;
 		}
 	}
 

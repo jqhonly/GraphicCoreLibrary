@@ -4,6 +4,7 @@
 //
 
 #pragma once
-
+#include <msclr\marshal_cppstd.h>
 // TODO:  在此处引用程序需要的其他头文件
 #include "ColorTrans.native.h"
+#include "CameraManage.native.h"
