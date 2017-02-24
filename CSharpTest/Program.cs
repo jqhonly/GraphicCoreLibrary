@@ -38,12 +38,13 @@ namespace CSharpTest
             CameraManageSharp cm=new CameraManageSharp("192.168.0.68", 8000, "admin", "hk123456");
             bool x=cm.login_managed();
             x = cm.play_managed(IntPtr.Zero);
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 byte[] data = cm.get_frame_managed();
             }
-            cm.stop_managed();
-            cm.logout_managed();
+            x = cm.stop_managed();
+            x = cm.logout_managed();
+            Console.WriteLine(x);
             Console.ReadLine();
             int a = 1;
         }

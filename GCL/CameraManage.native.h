@@ -18,6 +18,7 @@ public:
 	unsigned char * getFrame_native();
 	int Width;
 	int Height;
+	unsigned char * data;
 };
 
 #endif // CAMERAMANAGE_NATIVE_H

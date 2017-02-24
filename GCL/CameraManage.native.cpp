@@ -9,6 +9,7 @@ CameraManage::CameraManage(std::string ip, short port, std::string user, std::st
 
 CameraManage::~CameraManage()
 {
+	delete[] data;
 	delete[] camera;
 }
 
@@ -38,7 +39,9 @@ unsigned char * CameraManage::getFrame_native()
 	{
 		Width = camera->getFrame()->width;
 		Height = camera->getFrame()->height;
-		return camera->getFrame()->h_CpuData;
+		data = new unsigned char[Width*Height * 4 * sizeof(unsigned char)];
+		memcpy(data, camera->getFrame()->h_CpuData, Width*Height * 4 * sizeof(unsigned char));
+		return data;
 	}
 	else
 	{

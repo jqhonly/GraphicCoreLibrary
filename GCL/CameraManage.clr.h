@@ -62,7 +62,6 @@ namespace GCLSharp
 				height = cameramanagenative->Height;
 				width = cameramanagenative->Width;
 				rgba_data_output = gcnew array<Byte>(width * height * 4);
-				int x = sizeof(temp);
 //#ifdef _OPENMP
 //#pragma omp parallel for
 //#endif
@@ -70,7 +69,7 @@ namespace GCLSharp
 				{
 					rgba_data_output[i] = temp[i];
 				}
-				//delete[] temp;//unable to delete
+				delete[] temp;
 				return rgba_data_output;
 			}
 			else
