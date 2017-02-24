@@ -77,16 +77,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(CUDA_PATH_V8_0)\include;$(CUDA_PATH_V8_0)\CUDA Samples\v8.0\common\inc;$(SolutionDir)GraphicCoreLibrary;$(IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V8_0)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Common\HikVision\include;$(CUDA_PATH_V8_0)\include;$(CUDA_PATH_V8_0)\CUDA Samples\v8.0\common\inc;$(SolutionDir)GraphicCoreLibrary;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Common\HikVision\lib;$(CUDA_PATH_V8_0)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CUDA_PATH_V8_0)\include;$(CUDA_PATH_V8_0)\CUDA Samples\v8.0\common\inc;$(SolutionDir)GraphicCoreLibrary;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V8_0)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>$(SolutionDir)Common\HikVision\include;$(CUDA_PATH_V8_0)\include;$(CUDA_PATH_V8_0)\CUDA Samples\v8.0\common\inc;$(SolutionDir)GraphicCoreLibrary;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Common\HikVision\lib;$(CUDA_PATH_V8_0)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,7 +111,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;HCCore.lib;HCNetSDK.lib;PlayCtrl.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -135,7 +135,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;HCCore.lib;HCNetSDK.lib;PlayCtrl.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -147,6 +147,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CameraManage.clr.h" />
+    <ClInclude Include="CameraManage.native.h" />
     <ClInclude Include="ColorTrans.native.h" />
     <ClInclude Include="GCL.clr.h" />
     <ClInclude Include="resource.h" />
@@ -154,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="CameraManage.native.cpp" />
     <ClCompile Include="GCL.cpp" />
     <ClCompile Include="ColorTrans.native.cpp" />
     <ClCompile Include="stdafx.cpp">

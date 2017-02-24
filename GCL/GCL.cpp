@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "GCL.clr.h"
+#include "CameraManage.clr.h"
 #include <Windows.h>
 using namespace System;
 //using namespace GCL;

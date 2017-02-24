@@ -30,6 +30,12 @@
     <ClInclude Include="GCL.clr.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CameraManage.native.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraManage.clr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GCL.cpp">
@@ -42,6 +48,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ColorTrans.native.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraManage.native.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
